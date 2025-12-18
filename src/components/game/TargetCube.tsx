@@ -21,19 +21,19 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: hasBeenHit ? 2 : 0, // Static until hit
+    mass: hasBeenHit ? 1.5 : 0, // Static until hit, lighter for easier knockdown
     position,
-    args: [0.8, 0.8, 0.8],
+    args: [0.3, 0.6, 0.3], // Smaller, 2x taller than wide (kubb proportions)
     type: hasBeenHit ? 'Dynamic' : 'Static',
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 2) {
+        if (velocity > 1.5) { // Lower threshold for lighter kubbs
           setHasBeenHit(true);
           onHit(id);
           // Apply force to knock it over
-          api.mass.set(2);
-          api.applyImpulse([0, 5, -10], [0, 0, 0]);
+          api.mass.set(1.5);
+          api.applyImpulse([0, 3, -6], [0, 0, 0]);
         }
       }
     },
@@ -41,7 +41,7 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
 
   return (
     <mesh ref={cubeRef} castShadow receiveShadow>
-      <boxGeometry args={[0.8, 0.8, 0.8]} />
+      <boxGeometry args={[0.3, 0.6, 0.3]} />
       <meshStandardMaterial
         color={hasBeenHit || isHit ? '#888888' : color}
         roughness={0.3}

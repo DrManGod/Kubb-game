@@ -8,13 +8,13 @@ import { Ground } from './Ground';
 
 const CUBE_COLORS = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
 
-// Kubb-style positions - spread across the back line
+// Kubb-style positions - spread across the back line (adjusted Y for smaller kubbs)
 const CUBE_POSITIONS: [number, number, number][] = [
-  [-2.5, -1.2, -8],
-  [-1.25, -1.2, -8],
-  [0, -1.2, -8],
-  [1.25, -1.2, -8],
-  [2.5, -1.2, -8],
+  [-2.5, -1.5, -8],
+  [-1.25, -1.5, -8],
+  [0, -1.5, -8],
+  [1.25, -1.5, -8],
+  [2.5, -1.5, -8],
 ];
 
 const BATONS_PER_TURN = 6;
@@ -59,17 +59,17 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
       const deltaX = (e.clientX - dragStart.x) * 0.04;
       const deltaY = (dragStart.y - e.clientY) * 0.06;
       
-      // Calculate throw velocity - heavier baton needs more force
+      // Calculate throw velocity - lighter baton, less powerful throw
       const velocity: [number, number, number] = [
-        deltaX * 1.5,
-        Math.max(deltaY, 1.5) * 2,
-        -18 - Math.abs(deltaY) * 1.5,
+        deltaX * 0.8,
+        Math.max(deltaY, 1) * 1.2,
+        -10 - Math.abs(deltaY) * 0.8,
       ];
       
       const angularVelocity: [number, number, number] = [
-        deltaY * 3,
-        deltaX * 0.5,
-        Math.random() * 2 - 1,
+        deltaY * 2,
+        deltaX * 0.3,
+        Math.random() * 1.5 - 0.75,
       ];
       
       batonRef.current.throw(velocity, angularVelocity);
@@ -122,7 +122,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
       
       <Sky sunPosition={[100, 40, 100]} />
       
-      <Physics gravity={[0, -12, 0]}>
+      <Physics gravity={[0, -18, 0]}>
         <Ground />
         
         <Baton ref={batonRef} position={batonStartPos} />
