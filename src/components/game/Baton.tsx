@@ -14,25 +14,25 @@ export interface BatonRef {
 export const Baton = forwardRef<BatonRef, BatonProps>(({ position }, ref) => {
   const [isThrown, setIsThrown] = useState(false);
   
-  // Heavier baton for more realistic Kubb physics
+  // Lighter baton affected more by gravity
   const [cylinderRef, api] = useCylinder<Mesh>(() => ({
-    mass: isThrown ? 3.5 : 0, // Heavier baton (was 1.5)
+    mass: isThrown ? 1.2 : 0, // Lighter baton
     position,
-    args: [0.12, 0.12, 1.8, 16],
+    args: [0.08, 0.08, 1.2, 16], // Smaller baton
     rotation: [0, 0, Math.PI / 2],
-    linearDamping: 0.1, // Less air resistance
-    angularDamping: 0.15,
+    linearDamping: 0.3, // More air resistance
+    angularDamping: 0.25,
     type: isThrown ? 'Dynamic' : 'Kinematic',
     material: {
-      friction: 0.6,
-      restitution: 0.2, // Less bouncy
+      friction: 0.5,
+      restitution: 0.15,
     },
   }));
 
   useImperativeHandle(ref, () => ({
     throw: (velocity: [number, number, number], angularVelocity: [number, number, number]) => {
       setIsThrown(true);
-      api.mass.set(3.5);
+      api.mass.set(1.2);
       api.velocity.set(...velocity);
       api.angularVelocity.set(...angularVelocity);
     },
@@ -48,7 +48,7 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position }, ref) => {
 
   return (
     <mesh ref={cylinderRef} castShadow>
-      <cylinderGeometry args={[0.12, 0.12, 1.8, 16]} />
+      <cylinderGeometry args={[0.08, 0.08, 1.2, 16]} />
       <meshStandardMaterial 
         color="#8B5A2B" 
         roughness={0.7}
