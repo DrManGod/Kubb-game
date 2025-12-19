@@ -1,14 +1,16 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/cannon';
-import { OrbitControls, Sky } from '@react-three/drei';
+import { OrbitControls, Sky, Html } from '@react-three/drei';
 import { Baton, BatonRef } from './Baton';
 import { TargetCube } from './TargetCube';
+import { KingKubb } from './KingKubb';
 import { Ground } from './Ground';
+import { AimTrajectory } from './AimTrajectory';
 
 const CUBE_COLORS = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
 
-// Kubb-style positions - spread across the back line (adjusted Y for smaller kubbs)
+// Kubb-style positions - spread across the back line
 const CUBE_POSITIONS: [number, number, number][] = [
   [-2.5, -1.5, -8],
   [-1.25, -1.5, -8],
@@ -17,28 +19,42 @@ const CUBE_POSITIONS: [number, number, number][] = [
   [2.5, -1.5, -8],
 ];
 
+const KING_POSITION: [number, number, number] = [0, -1.3, -5];
+
 const BATONS_PER_TURN = 6;
 
 interface GameSceneContentProps {
   onScoreChange: (score: number) => void;
   onThrowsChange: (throws: number) => void;
   onBatonsLeftChange: (batonsLeft: number) => void;
+  onKingHit: (premature: boolean) => void;
   resetKey: number;
 }
 
-const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, resetKey }: GameSceneContentProps) => {
+const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, resetKey }: GameSceneContentProps) => {
   const batonRef = useRef<BatonRef>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [currentDrag, setCurrentDrag] = useState<{ x: number; y: number } | null>(null);
   const [hitCubes, setHitCubes] = useState<Set<number>>(new Set());
+  const [kingHit, setKingHit] = useState(false);
   const [throwCount, setThrowCount] = useState(0);
   const [batonsLeft, setBatonsLeft] = useState(BATONS_PER_TURN);
 
   const batonStartPos: [number, number, number] = [0, -1, 4];
 
+  // Calculate power and aim from drag
+  const power = isDragging && dragStart && currentDrag 
+    ? Math.min((dragStart.y - currentDrag.y) / 150, 1)
+    : 0;
+  const aimOffset = isDragging && dragStart && currentDrag
+    ? (currentDrag.x - dragStart.x) * 0.02
+    : 0;
+
   // Reset state when resetKey changes
   useEffect(() => {
     setHitCubes(new Set());
+    setKingHit(false);
     setThrowCount(0);
     setBatonsLeft(BATONS_PER_TURN);
     onScoreChange(0);
@@ -48,28 +64,37 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
   }, [resetKey]);
 
   const handlePointerDown = useCallback((e: any) => {
-    if (batonsLeft <= 0) return;
+    if (batonsLeft <= 0 || kingHit) return;
     e.stopPropagation();
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
-  }, [batonsLeft]);
+    setCurrentDrag({ x: e.clientX, y: e.clientY });
+  }, [batonsLeft, kingHit]);
+
+  const handlePointerMove = useCallback((e: any) => {
+    if (isDragging) {
+      setCurrentDrag({ x: e.clientX, y: e.clientY });
+    }
+  }, [isDragging]);
 
   const handlePointerUp = useCallback((e: any) => {
-    if (isDragging && dragStart && batonRef.current && batonsLeft > 0) {
-      const deltaX = (e.clientX - dragStart.x) * 0.04;
-      const deltaY = (dragStart.y - e.clientY) * 0.06;
+    if (isDragging && dragStart && batonRef.current && batonsLeft > 0 && !kingHit) {
+      const deltaX = (e.clientX - dragStart.x) * 0.02;
+      const deltaY = Math.max((dragStart.y - e.clientY) * 0.01, 0);
       
-      // Calculate throw velocity - lighter baton, less powerful throw
+      // Vertical throw with end-over-end rotation
+      const throwPower = Math.min(deltaY, 1);
       const velocity: [number, number, number] = [
-        deltaX * 0.8,
-        Math.max(deltaY, 1) * 1.2,
-        -10 - Math.abs(deltaY) * 0.8,
+        deltaX * 0.6,
+        2 + throwPower * 6,
+        -10 - throwPower * 8,
       ];
       
+      // End-over-end rotation (around X axis for vertical baton)
       const angularVelocity: [number, number, number] = [
-        deltaY * 2,
-        deltaX * 0.3,
-        Math.random() * 1.5 - 0.75,
+        8 + throwPower * 6, // Main end-over-end spin
+        deltaX * 0.5,
+        0,
       ];
       
       batonRef.current.throw(velocity, angularVelocity);
@@ -92,7 +117,8 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
     
     setIsDragging(false);
     setDragStart(null);
-  }, [isDragging, dragStart, throwCount, batonsLeft, onThrowsChange, onBatonsLeftChange]);
+    setCurrentDrag(null);
+  }, [isDragging, dragStart, throwCount, batonsLeft, kingHit, onThrowsChange, onBatonsLeftChange]);
 
   const handleCubeHit = useCallback((id: number) => {
     setHitCubes(prev => {
@@ -104,6 +130,14 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
       return newSet;
     });
   }, [onScoreChange]);
+
+  const handleKingHit = useCallback(() => {
+    if (!kingHit) {
+      setKingHit(true);
+      const allKubbsDown = hitCubes.size === 5;
+      onKingHit(!allKubbsDown);
+    }
+  }, [kingHit, hitCubes.size, onKingHit]);
 
   return (
     <>
@@ -137,12 +171,47 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
             isHit={hitCubes.has(i)}
           />
         ))}
+        
+        <KingKubb
+          key={`king-${resetKey}`}
+          position={KING_POSITION}
+          onHit={handleKingHit}
+          isHit={kingHit}
+        />
       </Physics>
+      
+      {/* Aim trajectory */}
+      <AimTrajectory
+        startPosition={batonStartPos}
+        power={power}
+        aimOffset={aimOffset}
+        visible={isDragging && power > 0.05}
+      />
+      
+      {/* Power Meter as HTML overlay */}
+      {isDragging && power > 0.05 && (
+        <Html center position={[0, -3, 8]}>
+          <div className="flex flex-col items-center gap-1 pointer-events-none">
+            <div className="text-sm font-bold text-white drop-shadow-lg">Power</div>
+            <div className="w-32 h-4 bg-black/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/30">
+              <div 
+                className={`h-full transition-all duration-75 ${
+                  power * 100 < 30 ? 'bg-green-500' :
+                  power * 100 < 60 ? 'bg-yellow-500' :
+                  power * 100 < 85 ? 'bg-orange-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(power * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        </Html>
+      )}
       
       {/* Invisible plane to capture throws */}
       <mesh
         position={[0, 0, 5]}
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
         <planeGeometry args={[25, 20]} />
@@ -164,10 +233,11 @@ interface GameSceneProps {
   onScoreChange: (score: number) => void;
   onThrowsChange: (throws: number) => void;
   onBatonsLeftChange: (batonsLeft: number) => void;
+  onKingHit: (premature: boolean) => void;
   resetKey: number;
 }
 
-export const GameScene = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, resetKey }: GameSceneProps) => {
+export const GameScene = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, resetKey }: GameSceneProps) => {
   return (
     <Canvas
       shadows
@@ -178,6 +248,7 @@ export const GameScene = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, r
         onScoreChange={onScoreChange} 
         onThrowsChange={onThrowsChange}
         onBatonsLeftChange={onBatonsLeftChange}
+        onKingHit={onKingHit}
         resetKey={resetKey}
       />
     </Canvas>

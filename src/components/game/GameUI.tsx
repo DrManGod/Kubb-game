@@ -1,16 +1,17 @@
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Target, Zap } from 'lucide-react';
+import { RotateCcw, Target, Zap, Crown } from 'lucide-react';
 
 interface GameUIProps {
   score: number;
   throws: number;
   batonsLeft: number;
+  kingHitPremature?: boolean;
   onReset: () => void;
 }
 
-export const GameUI = ({ score, throws, batonsLeft, onReset }: GameUIProps) => {
-  const isWinner = score === 5;
-  const outOfBatons = batonsLeft === 0 && !isWinner;
+export const GameUI = ({ score, throws, batonsLeft, kingHitPremature = false, onReset }: GameUIProps) => {
+  const isWinner = score === 5 && !kingHitPremature;
+  const outOfBatons = batonsLeft === 0 && !isWinner && !kingHitPremature;
   
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -20,7 +21,7 @@ export const GameUI = ({ score, throws, batonsLeft, onReset }: GameUIProps) => {
           <div className="bg-card/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">Score</span>
+              <span className="text-sm font-medium text-muted-foreground">Kubbs</span>
             </div>
             <p className={`text-3xl font-bold text-primary ${score > 0 ? 'score-glow' : ''}`}>
               {score}/5
@@ -45,6 +46,16 @@ export const GameUI = ({ score, throws, batonsLeft, onReset }: GameUIProps) => {
               ))}
             </div>
           </div>
+          
+          <div className="bg-card/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
+            <div className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-500" />
+              <span className="text-sm font-medium text-muted-foreground">King</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Knock down after all kubbs!
+            </p>
+          </div>
         </div>
         
         <Button 
@@ -61,7 +72,7 @@ export const GameUI = ({ score, throws, batonsLeft, onReset }: GameUIProps) => {
       {/* Instructions */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-sm rounded-lg px-6 py-3 shadow-lg">
         <p className="text-center text-muted-foreground font-medium">
-          🎯 Drag up and release to throw the baton!
+          🎯 Drag up to throw vertically! Hit all kubbs, then the King.
         </p>
       </div>
       
@@ -74,6 +85,20 @@ export const GameUI = ({ score, throws, batonsLeft, onReset }: GameUIProps) => {
             <Button onClick={onReset} size="lg" className="shadow-lg">
               <RotateCcw className="w-4 h-4 mr-2" />
               Play Again
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* King hit prematurely overlay */}
+      {kingHitPremature && (
+        <div className="absolute inset-0 flex items-center justify-center bg-foreground/20 backdrop-blur-sm pointer-events-auto">
+          <div className="bg-card rounded-2xl p-8 shadow-2xl bounce-in text-center">
+            <h2 className="text-4xl font-bold text-destructive mb-2">👑 King Down Early!</h2>
+            <p className="text-muted-foreground mb-4">You must knock down all kubbs before the King!</p>
+            <Button onClick={onReset} size="lg" className="shadow-lg">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Try Again
             </Button>
           </div>
         </div>
