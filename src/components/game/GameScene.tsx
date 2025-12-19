@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics } from '@react-three/cannon';
 import { OrbitControls, Sky, Html } from '@react-three/drei';
 import { Baton, BatonRef } from './Baton';
@@ -31,25 +31,53 @@ interface GameSceneContentProps {
   resetKey: number;
 }
 
+// Power meter that oscillates automatically
+const PowerMeter = ({ isAiming, power }: { isAiming: boolean; power: number }) => {
+  if (!isAiming) return null;
+  
+  const powerPercent = power * 100;
+  
+  return (
+    <Html center position={[4, 0, 0]}>
+      <div className="flex flex-col items-center gap-1 pointer-events-none">
+        <div className="text-sm font-bold text-white drop-shadow-lg">Power</div>
+        <div className="w-8 h-40 bg-black/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/30 flex flex-col-reverse">
+          <div 
+            className={`w-full transition-colors duration-75 ${
+              powerPercent < 30 ? 'bg-green-500' :
+              powerPercent < 60 ? 'bg-yellow-500' :
+              powerPercent < 85 ? 'bg-orange-500' : 'bg-red-500'
+            }`}
+            style={{ height: `${powerPercent}%` }}
+          />
+        </div>
+        <div className="text-xs text-white drop-shadow-lg">{Math.round(powerPercent)}%</div>
+      </div>
+    </Html>
+  );
+};
+
 const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, resetKey }: GameSceneContentProps) => {
   const batonRef = useRef<BatonRef>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-  const [currentDrag, setCurrentDrag] = useState<{ x: number; y: number } | null>(null);
+  const [isAiming, setIsAiming] = useState(false);
+  const [aimOffset, setAimOffset] = useState(0);
+  const [oscillatingPower, setOscillatingPower] = useState(0);
   const [hitCubes, setHitCubes] = useState<Set<number>>(new Set());
   const [kingHit, setKingHit] = useState(false);
   const [throwCount, setThrowCount] = useState(0);
   const [batonsLeft, setBatonsLeft] = useState(BATONS_PER_TURN);
+  const oscillationRef = useRef(0);
 
   const batonStartPos: [number, number, number] = [0, -1, 4];
 
-  // Calculate power and aim from drag
-  const power = isDragging && dragStart && currentDrag 
-    ? Math.min((dragStart.y - currentDrag.y) / 150, 1)
-    : 0;
-  const aimOffset = isDragging && dragStart && currentDrag
-    ? (currentDrag.x - dragStart.x) * 0.02
-    : 0;
+  // Oscillate power while aiming
+  useFrame((state) => {
+    if (isAiming) {
+      // Oscillate between 0.1 and 1.0, speed of 2
+      oscillationRef.current = (Math.sin(state.clock.elapsedTime * 2.5) + 1) / 2;
+      setOscillatingPower(0.1 + oscillationRef.current * 0.9);
+    }
+  });
 
   // Reset state when resetKey changes
   useEffect(() => {
@@ -57,6 +85,8 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
     setKingHit(false);
     setThrowCount(0);
     setBatonsLeft(BATONS_PER_TURN);
+    setIsAiming(false);
+    setAimOffset(0);
     onScoreChange(0);
     onThrowsChange(0);
     onBatonsLeftChange(BATONS_PER_TURN);
@@ -66,34 +96,32 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
   const handlePointerDown = useCallback((e: any) => {
     if (batonsLeft <= 0 || kingHit) return;
     e.stopPropagation();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-    setCurrentDrag({ x: e.clientX, y: e.clientY });
+    setIsAiming(true);
   }, [batonsLeft, kingHit]);
 
   const handlePointerMove = useCallback((e: any) => {
-    if (isDragging) {
-      setCurrentDrag({ x: e.clientX, y: e.clientY });
+    if (isAiming) {
+      // Control aim direction with mouse X position relative to center
+      const centerX = window.innerWidth / 2;
+      setAimOffset((e.clientX - centerX) * 0.01);
     }
-  }, [isDragging]);
+  }, [isAiming]);
 
-  const handlePointerUp = useCallback((e: any) => {
-    if (isDragging && dragStart && batonRef.current && batonsLeft > 0 && !kingHit) {
-      const deltaX = (e.clientX - dragStart.x) * 0.02;
-      const deltaY = Math.max((dragStart.y - e.clientY) * 0.01, 0);
+  const handlePointerUp = useCallback(() => {
+    if (isAiming && batonRef.current && batonsLeft > 0 && !kingHit) {
+      // Use the oscillating power and aim - match trajectory physics exactly
+      const power = oscillatingPower;
+      const gravity = -18;
+      const velocityZ = -10 - power * 8;
+      const velocityY = 2 + power * 6;
+      const velocityX = aimOffset * 0.8;
       
-      // Vertical throw with end-over-end rotation
-      const throwPower = Math.min(deltaY, 1);
-      const velocity: [number, number, number] = [
-        deltaX * 0.6,
-        2 + throwPower * 6,
-        -10 - throwPower * 8,
-      ];
+      const velocity: [number, number, number] = [velocityX, velocityY, velocityZ];
       
       // End-over-end rotation (around X axis for vertical baton)
       const angularVelocity: [number, number, number] = [
-        8 + throwPower * 6, // Main end-over-end spin
-        deltaX * 0.5,
+        8 + power * 6,
+        aimOffset * 0.5,
         0,
       ];
       
@@ -115,10 +143,9 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       }, 2500);
     }
     
-    setIsDragging(false);
-    setDragStart(null);
-    setCurrentDrag(null);
-  }, [isDragging, dragStart, throwCount, batonsLeft, kingHit, onThrowsChange, onBatonsLeftChange]);
+    setIsAiming(false);
+    setAimOffset(0);
+  }, [isAiming, oscillatingPower, aimOffset, throwCount, batonsLeft, kingHit, onThrowsChange, onBatonsLeftChange]);
 
   const handleCubeHit = useCallback((id: number) => {
     setHitCubes(prev => {
@@ -183,29 +210,13 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       {/* Aim trajectory */}
       <AimTrajectory
         startPosition={batonStartPos}
-        power={power}
+        power={oscillatingPower}
         aimOffset={aimOffset}
-        visible={isDragging && power > 0.05}
+        visible={isAiming}
       />
       
-      {/* Power Meter as HTML overlay */}
-      {isDragging && power > 0.05 && (
-        <Html center position={[0, -3, 8]}>
-          <div className="flex flex-col items-center gap-1 pointer-events-none">
-            <div className="text-sm font-bold text-white drop-shadow-lg">Power</div>
-            <div className="w-32 h-4 bg-black/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/30">
-              <div 
-                className={`h-full transition-all duration-75 ${
-                  power * 100 < 30 ? 'bg-green-500' :
-                  power * 100 < 60 ? 'bg-yellow-500' :
-                  power * 100 < 85 ? 'bg-orange-500' : 'bg-red-500'
-                }`}
-                style={{ width: `${Math.min(power * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        </Html>
-      )}
+      {/* Power Meter */}
+      <PowerMeter isAiming={isAiming} power={oscillatingPower} />
       
       {/* Invisible plane to capture throws */}
       <mesh
@@ -223,7 +234,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
         enablePan={false}
         maxPolarAngle={Math.PI / 2.3}
         minPolarAngle={Math.PI / 5}
-        enabled={!isDragging}
+        enabled={!isAiming}
       />
     </>
   );
