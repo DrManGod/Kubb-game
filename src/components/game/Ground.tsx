@@ -10,6 +10,10 @@ export const Ground = () => {
     rotation: [-Math.PI / 2, 0, 0],
     position: [0, -2, -3],
     type: 'Static',
+    material: {
+      friction: 0.8,
+      restitution: 0.3, // Allow bouncing
+    },
   }));
 
   return (

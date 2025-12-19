@@ -16,17 +16,19 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position }, ref) => {
   
   // Vertical baton for end-over-end throw
   const [cylinderRef, api] = useCylinder<Mesh>(() => ({
-    mass: isThrown ? 1.5 : 0,
+    mass: isThrown ? 2 : 0,
     position,
     args: [0.08, 0.08, 1.2, 16],
     rotation: [Math.PI / 2, 0, 0], // Vertical orientation
-    linearDamping: 0.25,
-    angularDamping: 0.2,
+    linearDamping: 0.1,
+    angularDamping: 0.05,
     type: isThrown ? 'Dynamic' : 'Kinematic',
     material: {
-      friction: 0.6,
-      restitution: 0.1,
+      friction: 0.5,
+      restitution: 0.4, // Better bouncing
     },
+    collisionFilterGroup: 1,
+    collisionFilterMask: -1, // Collide with everything
   }));
 
   useImperativeHandle(ref, () => ({
