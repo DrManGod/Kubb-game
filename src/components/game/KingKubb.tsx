@@ -18,18 +18,22 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: hasBeenHit ? 2.5 : 0,
+    mass: hasBeenHit ? 2 : 0,
     position,
-    args: [0.4, 1.0, 0.4], // Taller king kubb
-    type: hasBeenHit ? 'Dynamic' : 'Static',
+    args: [0.4, 1.0, 0.4],
+    type: hasBeenHit ? 'Dynamic' : 'Kinematic',
+    material: {
+      friction: 0.6,
+      restitution: 0.2,
+    },
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 1.5) {
+        if (velocity > 0.8) {
           setHasBeenHit(true);
           onHit();
-          api.mass.set(2.5);
-          api.applyImpulse([0, 4, -8], [0, 0, 0]);
+          api.mass.set(2);
+          api.applyImpulse([0, 3, -5], [0, 0.4, 0]);
         }
       }
     },

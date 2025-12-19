@@ -21,19 +21,24 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: hasBeenHit ? 1.5 : 0, // Static until hit, lighter for easier knockdown
+    mass: hasBeenHit ? 1.2 : 0,
     position,
-    args: [0.3, 0.6, 0.3], // Smaller, 2x taller than wide (kubb proportions)
-    type: hasBeenHit ? 'Dynamic' : 'Static',
+    args: [0.3, 0.6, 0.3],
+    type: hasBeenHit ? 'Dynamic' : 'Kinematic',
+    material: {
+      friction: 0.6,
+      restitution: 0.2,
+    },
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 1.5) { // Lower threshold for lighter kubbs
+        if (velocity > 0.8) { // Lower threshold for easier knockdown
           setHasBeenHit(true);
           onHit(id);
-          // Apply force to knock it over
-          api.mass.set(1.5);
-          api.applyImpulse([0, 3, -6], [0, 0, 0]);
+          api.mass.set(1.2);
+          // Apply force based on impact direction
+          const impulseX = (Math.random() - 0.5) * 2;
+          api.applyImpulse([impulseX, 2, -4], [0, 0.3, 0]);
         }
       }
     },
