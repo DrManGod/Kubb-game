@@ -14,25 +14,25 @@ export interface BatonRef {
 export const Baton = forwardRef<BatonRef, BatonProps>(({ position }, ref) => {
   const [isThrown, setIsThrown] = useState(false);
   
-  // Lighter baton affected more by gravity
+  // Vertical baton for end-over-end throw
   const [cylinderRef, api] = useCylinder<Mesh>(() => ({
-    mass: isThrown ? 1.2 : 0, // Lighter baton
+    mass: isThrown ? 1.5 : 0,
     position,
-    args: [0.08, 0.08, 1.2, 16], // Smaller baton
-    rotation: [0, 0, Math.PI / 2],
-    linearDamping: 0.3, // More air resistance
-    angularDamping: 0.25,
+    args: [0.08, 0.08, 1.2, 16],
+    rotation: [Math.PI / 2, 0, 0], // Vertical orientation
+    linearDamping: 0.25,
+    angularDamping: 0.2,
     type: isThrown ? 'Dynamic' : 'Kinematic',
     material: {
-      friction: 0.5,
-      restitution: 0.15,
+      friction: 0.6,
+      restitution: 0.1,
     },
   }));
 
   useImperativeHandle(ref, () => ({
     throw: (velocity: [number, number, number], angularVelocity: [number, number, number]) => {
       setIsThrown(true);
-      api.mass.set(1.2);
+      api.mass.set(1.5);
       api.velocity.set(...velocity);
       api.angularVelocity.set(...angularVelocity);
     },
@@ -42,7 +42,7 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position }, ref) => {
       api.position.set(...newPosition);
       api.velocity.set(0, 0, 0);
       api.angularVelocity.set(0, 0, 0);
-      api.rotation.set(0, 0, Math.PI / 2);
+      api.rotation.set(Math.PI / 2, 0, 0); // Reset to vertical
     },
   }));
 

@@ -7,12 +7,18 @@ const Index = () => {
   const [throws, setThrows] = useState(0);
   const [batonsLeft, setBatonsLeft] = useState(6);
   const [resetKey, setResetKey] = useState(0);
+  const [kingHitPremature, setKingHitPremature] = useState(false);
 
   const handleReset = useCallback(() => {
     setScore(0);
     setThrows(0);
     setBatonsLeft(6);
+    setKingHitPremature(false);
     setResetKey(prev => prev + 1);
+  }, []);
+
+  const handleKingHit = useCallback((premature: boolean) => {
+    setKingHitPremature(premature);
   }, []);
 
   return (
@@ -29,6 +35,7 @@ const Index = () => {
         onScoreChange={setScore}
         onThrowsChange={setThrows}
         onBatonsLeftChange={setBatonsLeft}
+        onKingHit={handleKingHit}
         resetKey={resetKey}
       />
       
@@ -37,6 +44,7 @@ const Index = () => {
         score={score}
         throws={throws}
         batonsLeft={batonsLeft}
+        kingHitPremature={kingHitPremature}
         onReset={handleReset}
       />
     </div>
