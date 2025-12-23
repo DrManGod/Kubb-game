@@ -15,14 +15,16 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position }, ref) => {
   const [isThrown, setIsThrown] = useState(false);
   
   // Vertical baton for end-over-end throw
+  // NOTE: @react-three/cannon bodies are not re-created when React state changes,
+  // so we keep the body Dynamic at all times and control behavior via mass/velocities.
   const [cylinderRef, api] = useCylinder<Mesh>(() => ({
-    mass: isThrown ? 2 : 0,
+    mass: isThrown ? 1.5 : 0,
     position,
     args: [0.08, 0.08, 1.2, 16],
     rotation: [Math.PI / 2, 0, 0], // Vertical orientation
     linearDamping: 0.1,
     angularDamping: 0.05,
-    type: isThrown ? 'Dynamic' : 'Kinematic',
+    type: 'Dynamic',
     material: {
       friction: 0.5,
       restitution: 0.4, // Better bouncing

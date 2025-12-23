@@ -18,10 +18,11 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
+    // Keep body Dynamic; toggle behavior via mass (react-three/cannon does not update `type` on state change)
     mass: hasBeenHit ? 2 : 0,
     position,
     args: [0.4, 1.0, 0.4],
-    type: hasBeenHit ? 'Dynamic' : 'Kinematic',
+    type: 'Dynamic',
     material: {
       friction: 0.6,
       restitution: 0.2,
