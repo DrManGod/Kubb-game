@@ -19,7 +19,7 @@ const CUBE_POSITIONS: [number, number, number][] = [
   [2.5, -1.5, -8],
 ];
 
-const KING_POSITION: [number, number, number] = [0, -1.3, -5];
+const KING_POSITION: [number, number, number] = [0, -1.3, -10];
 
 const BATONS_PER_TURN = 6;
 
@@ -111,9 +111,8 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
     if (isAiming && batonRef.current && batonsLeft > 0 && !kingHit) {
       // Use the oscillating power and aim - match trajectory physics exactly
       const power = oscillatingPower;
-      const gravity = -18;
-      const velocityZ = -10 - power * 8;
-      const velocityY = 2 + power * 6;
+      const velocityZ = -8 - power * 10;
+      const velocityY = 4 + power * 4;
       const velocityX = aimOffset * 0.8;
       
       const velocity: [number, number, number] = [velocityX, velocityY, velocityZ];
@@ -183,7 +182,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       
       <Sky sunPosition={[100, 40, 100]} />
       
-      <Physics gravity={[0, -18, 0]}>
+      <Physics gravity={[0, -9.81, 0]}>
         <Ground />
         
         <Baton ref={batonRef} position={batonStartPos} />
