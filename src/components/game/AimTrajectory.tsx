@@ -21,14 +21,15 @@ export const AimTrajectory = ({ startPosition, power, aimOffset, visible }: AimT
   const points = useMemo(() => {
     if (!visible || power < 0.1) return [];
     
-    const gravity = -18;
-    const velocityZ = -10 - power * 8;
-    const velocityY = 2 + power * 6;
+    // Match the throw physics exactly
+    const gravity = -9.81;
+    const velocityZ = -6 - power * 6;
+    const velocityY = 3 + power * 3;
     const velocityX = aimOffset * 0.8;
     
     const trajectoryPoints: THREE.Vector3[] = [];
-    const steps = 30;
-    const timeStep = 0.08;
+    const steps = 40;
+    const timeStep = 0.06;
     
     for (let i = 0; i <= steps; i++) {
       const t = i * timeStep;

@@ -10,16 +10,17 @@ import { AimTrajectory } from './AimTrajectory';
 
 const CUBE_COLORS = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
 
-// Kubb-style positions - spread across the back line
+// Kubb-style positions - spread across the back line, sitting on ground (Y=-2 + half height)
 const CUBE_POSITIONS: [number, number, number][] = [
-  [-2.5, -1.5, -8],
-  [-1.25, -1.5, -8],
-  [0, -1.5, -8],
-  [1.25, -1.5, -8],
-  [2.5, -1.5, -8],
+  [-2.5, -1.7, -6],
+  [-1.25, -1.7, -6],
+  [0, -1.7, -6],
+  [1.25, -1.7, -6],
+  [2.5, -1.7, -6],
 ];
 
-const KING_POSITION: [number, number, number] = [0, -1.3, -10];
+// King on center line, closer to thrower (Z=-3 is center line)
+const KING_POSITION: [number, number, number] = [0, -1.5, -3];
 
 const BATONS_PER_TURN = 6;
 
@@ -68,7 +69,8 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
   const [batonsLeft, setBatonsLeft] = useState(BATONS_PER_TURN);
   const oscillationRef = useRef(0);
 
-  const batonStartPos: [number, number, number] = [0, -1, 4];
+  // Baton starts at ground level
+  const batonStartPos: [number, number, number] = [0, -1.4, 3];
 
   // Oscillate power while aiming
   useFrame((state) => {
@@ -109,10 +111,11 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
 
   const handlePointerUp = useCallback(() => {
     if (isAiming && batonRef.current && batonsLeft > 0 && !kingHit) {
-      // Use the oscillating power and aim - match trajectory physics exactly
+      // Use the oscillating power and aim - adjusted physics for proper arc
       const power = oscillatingPower;
-      const velocityZ = -8 - power * 10;
-      const velocityY = 4 + power * 4;
+      // Lower arc, faster forward velocity to actually reach the kubbs
+      const velocityZ = -6 - power * 6;  // Forward velocity
+      const velocityY = 3 + power * 3;   // Upward velocity for arc
       const velocityX = aimOffset * 0.8;
       
       const velocity: [number, number, number] = [velocityX, velocityY, velocityZ];
