@@ -33,13 +33,19 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 0.8) { // Lower threshold for easier knockdown
+        if (velocity > 0.5) { // Lower threshold for easier knockdown
           setHasBeenHit(true);
           onHit(id);
           api.mass.set(1.2);
-          // Apply force based on impact direction
-          const impulseX = (Math.random() - 0.5) * 2;
-          api.applyImpulse([impulseX, 2, -4], [0, 0.3, 0]);
+          // Strong topple impulse - apply at top of cube for rotation
+          const impulseX = (Math.random() - 0.5) * 3;
+          api.applyImpulse([impulseX, 1, -6], [0, 0.3, 0]);
+          // Add angular velocity for better topple effect
+          api.angularVelocity.set(
+            (Math.random() - 0.5) * 8,
+            (Math.random() - 0.5) * 4,
+            -6 + Math.random() * 2
+          );
         }
       }
     },

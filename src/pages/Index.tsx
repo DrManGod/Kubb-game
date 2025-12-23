@@ -8,12 +8,14 @@ const Index = () => {
   const [batonsLeft, setBatonsLeft] = useState(6);
   const [resetKey, setResetKey] = useState(0);
   const [kingHitPremature, setKingHitPremature] = useState(false);
+  const [hitKubbs, setHitKubbs] = useState<Set<number>>(new Set());
 
   const handleReset = useCallback(() => {
     setScore(0);
     setThrows(0);
     setBatonsLeft(6);
     setKingHitPremature(false);
+    setHitKubbs(new Set());
     setResetKey(prev => prev + 1);
   }, []);
 
@@ -36,6 +38,7 @@ const Index = () => {
         onThrowsChange={setThrows}
         onBatonsLeftChange={setBatonsLeft}
         onKingHit={handleKingHit}
+        onHitKubbsChange={setHitKubbs}
         resetKey={resetKey}
       />
       
@@ -45,6 +48,7 @@ const Index = () => {
         throws={throws}
         batonsLeft={batonsLeft}
         kingHitPremature={kingHitPremature}
+        hitKubbs={hitKubbs}
         onReset={handleReset}
       />
     </div>
