@@ -29,6 +29,7 @@ interface GameSceneContentProps {
   onThrowsChange: (throws: number) => void;
   onBatonsLeftChange: (batonsLeft: number) => void;
   onKingHit: (premature: boolean) => void;
+  onHitKubbsChange: (hitKubbs: Set<number>) => void;
   resetKey: number;
 }
 
@@ -58,7 +59,7 @@ const PowerMeter = ({ isAiming, power }: { isAiming: boolean; power: number }) =
   );
 };
 
-const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, resetKey }: GameSceneContentProps) => {
+const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, onHitKubbsChange, resetKey }: GameSceneContentProps) => {
   const batonRef = useRef<BatonRef>(null);
   const [isAiming, setIsAiming] = useState(false);
   const [aimOffset, setAimOffset] = useState(0);
@@ -155,10 +156,11 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       if (!newSet.has(id)) {
         newSet.add(id);
         onScoreChange(newSet.size);
+        onHitKubbsChange(newSet);
       }
       return newSet;
     });
-  }, [onScoreChange]);
+  }, [onScoreChange, onHitKubbsChange]);
 
   const handleKingHit = useCallback(() => {
     if (!kingHit) {
@@ -247,10 +249,11 @@ interface GameSceneProps {
   onThrowsChange: (throws: number) => void;
   onBatonsLeftChange: (batonsLeft: number) => void;
   onKingHit: (premature: boolean) => void;
+  onHitKubbsChange: (hitKubbs: Set<number>) => void;
   resetKey: number;
 }
 
-export const GameScene = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, resetKey }: GameSceneProps) => {
+export const GameScene = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, onKingHit, onHitKubbsChange, resetKey }: GameSceneProps) => {
   return (
     <Canvas
       shadows
@@ -262,6 +265,7 @@ export const GameScene = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
         onThrowsChange={onThrowsChange}
         onBatonsLeftChange={onBatonsLeftChange}
         onKingHit={onKingHit}
+        onHitKubbsChange={onHitKubbsChange}
         resetKey={resetKey}
       />
     </Canvas>

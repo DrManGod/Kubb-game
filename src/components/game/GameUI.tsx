@@ -6,12 +6,15 @@ interface GameUIProps {
   throws: number;
   batonsLeft: number;
   kingHitPremature?: boolean;
+  hitKubbs?: Set<number>;
   onReset: () => void;
 }
 
-export const GameUI = ({ score, throws, batonsLeft, kingHitPremature = false, onReset }: GameUIProps) => {
+export const GameUI = ({ score, throws, batonsLeft, kingHitPremature = false, hitKubbs = new Set(), onReset }: GameUIProps) => {
   const isWinner = score === 5 && !kingHitPremature;
   const outOfBatons = batonsLeft === 0 && !isWinner && !kingHitPremature;
+  
+  const kubbColors = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
   
   return (
     <div className="absolute inset-0 pointer-events-none">
@@ -26,6 +29,23 @@ export const GameUI = ({ score, throws, batonsLeft, kingHitPremature = false, on
             <p className={`text-3xl font-bold text-primary ${score > 0 ? 'score-glow' : ''}`}>
               {score}/5
             </p>
+            {/* Individual kubb indicators */}
+            <div className="flex gap-1.5 mt-2">
+              {kubbColors.map((color, i) => (
+                <div
+                  key={i}
+                  className={`w-4 h-6 rounded-sm transition-all duration-300 ${
+                    hitKubbs.has(i) 
+                      ? 'opacity-30 rotate-45 scale-75' 
+                      : 'shadow-md'
+                  }`}
+                  style={{ 
+                    backgroundColor: hitKubbs.has(i) ? '#888' : color,
+                    transformOrigin: 'bottom center'
+                  }}
+                />
+              ))}
+            </div>
           </div>
           
           <div className="bg-card/90 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg">
