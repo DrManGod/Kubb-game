@@ -68,10 +68,11 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
   const [kingHit, setKingHit] = useState(false);
   const [throwCount, setThrowCount] = useState(0);
   const [batonsLeft, setBatonsLeft] = useState(BATONS_PER_TURN);
+  const [throwerX, setThrowerX] = useState(0);
   const oscillationRef = useRef(0);
 
-  // Baton starts at ground level
-  const batonStartPos: [number, number, number] = [0, -1.4, 3];
+  // Baton starts at ground level, X position can be adjusted
+  const batonStartPos: [number, number, number] = [throwerX, -1.4, 3];
 
   // Oscillate power while aiming
   useFrame((state) => {
@@ -82,6 +83,13 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
     }
   });
 
+  // Update baton position when throwerX changes
+  useEffect(() => {
+    if (!isAiming && batonsLeft > 0 && batonRef.current) {
+      batonRef.current.reset([throwerX, -1.4, 3]);
+    }
+  }, [throwerX]);
+
   // Reset state when resetKey changes
   useEffect(() => {
     setHitCubes(new Set());
@@ -90,10 +98,11 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
     setBatonsLeft(BATONS_PER_TURN);
     setIsAiming(false);
     setAimOffset(0);
+    setThrowerX(0);
     onScoreChange(0);
     onThrowsChange(0);
     onBatonsLeftChange(BATONS_PER_TURN);
-    batonRef.current?.reset(batonStartPos);
+    batonRef.current?.reset([0, -1.4, 3]);
   }, [resetKey]);
 
   const handlePointerDown = useCallback((e: any) => {
@@ -141,7 +150,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       // Reset baton after delay if batons remaining
       setTimeout(() => {
         if (newBatonsLeft > 0) {
-          batonRef.current?.reset(batonStartPos);
+          batonRef.current?.reset([throwerX, -1.4, 3]);
         }
       }, 2500);
     }
@@ -221,6 +230,29 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       
       {/* Power Meter */}
       <PowerMeter isAiming={isAiming} power={oscillatingPower} />
+      
+      {/* Thrower position control */}
+      <Html center position={[0, -1.5, 4.5]}>
+        <div className="flex items-center gap-2 pointer-events-auto bg-card/80 backdrop-blur-sm px-3 py-2 rounded-lg">
+          <button
+            onClick={() => setThrowerX(Math.max(-3, throwerX - 0.5))}
+            disabled={isAiming || batonsLeft <= 0}
+            className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full font-bold disabled:opacity-50"
+          >
+            ←
+          </button>
+          <span className="text-sm text-foreground font-medium min-w-[3rem] text-center">
+            {throwerX.toFixed(1)}
+          </span>
+          <button
+            onClick={() => setThrowerX(Math.min(3, throwerX + 0.5))}
+            disabled={isAiming || batonsLeft <= 0}
+            className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full font-bold disabled:opacity-50"
+          >
+            →
+          </button>
+        </div>
+      </Html>
       
       {/* Invisible plane to capture throws */}
       <mesh
