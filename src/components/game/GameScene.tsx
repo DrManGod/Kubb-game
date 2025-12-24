@@ -112,12 +112,20 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
   }, [batonsLeft, kingHit]);
 
   const handlePointerMove = useCallback((e: any) => {
+    // Always track mouse X for thrower position when not aiming
+    if (!isAiming && batonsLeft > 0 && !kingHit) {
+      const centerX = window.innerWidth / 2;
+      const normalizedX = (e.clientX - centerX) / (window.innerWidth / 2);
+      // Clamp to baseline bounds (-3 to 3)
+      setThrowerX(Math.max(-3, Math.min(3, normalizedX * 4)));
+    }
+    
     if (isAiming) {
       // Control aim direction with mouse X position relative to center
       const centerX = window.innerWidth / 2;
       setAimOffset((e.clientX - centerX) * 0.01);
     }
-  }, [isAiming]);
+  }, [isAiming, batonsLeft, kingHit]);
 
   const handlePointerUp = useCallback(() => {
     if (isAiming && batonRef.current && batonsLeft > 0 && !kingHit) {
@@ -231,28 +239,11 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       {/* Power Meter */}
       <PowerMeter isAiming={isAiming} power={oscillatingPower} />
       
-      {/* Thrower position control */}
-      <Html center position={[0, -1.5, 4.5]}>
-        <div className="flex items-center gap-2 pointer-events-auto bg-card/80 backdrop-blur-sm px-3 py-2 rounded-lg">
-          <button
-            onClick={() => setThrowerX(Math.max(-3, throwerX - 0.5))}
-            disabled={isAiming || batonsLeft <= 0}
-            className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full font-bold disabled:opacity-50"
-          >
-            ←
-          </button>
-          <span className="text-sm text-foreground font-medium min-w-[3rem] text-center">
-            {throwerX.toFixed(1)}
-          </span>
-          <button
-            onClick={() => setThrowerX(Math.min(3, throwerX + 0.5))}
-            disabled={isAiming || batonsLeft <= 0}
-            className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full font-bold disabled:opacity-50"
-          >
-            →
-          </button>
-        </div>
-      </Html>
+      {/* Position indicator on baseline */}
+      <mesh position={[throwerX, -1.95, 3]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.15, 0.25, 32]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.6} transparent />
+      </mesh>
       
       {/* Invisible plane to capture throws */}
       <mesh
