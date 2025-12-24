@@ -69,6 +69,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
   const [throwCount, setThrowCount] = useState(0);
   const [batonsLeft, setBatonsLeft] = useState(BATONS_PER_TURN);
   const [throwerX, setThrowerX] = useState(0);
+  const [batonInFlight, setBatonInFlight] = useState(false);
   const oscillationRef = useRef(0);
 
   // Baton starts at ground level, X position can be adjusted
@@ -83,19 +84,13 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
     }
   });
 
-  // Update baton position when throwerX changes
-  useEffect(() => {
-    if (!isAiming && batonsLeft > 0 && batonRef.current) {
-      batonRef.current.reset([throwerX, -1.4, 3]);
-    }
-  }, [throwerX]);
-
   // Reset state when resetKey changes
   useEffect(() => {
     setHitCubes(new Set());
     setKingHit(false);
     setThrowCount(0);
     setBatonsLeft(BATONS_PER_TURN);
+    setBatonInFlight(false);
     setIsAiming(false);
     setAimOffset(0);
     setThrowerX(0);
@@ -108,26 +103,40 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
   const handlePointerDown = useCallback((e: any) => {
     if (batonsLeft <= 0 || kingHit) return;
     e.stopPropagation();
+
+    // Ensure we still receive pointer up even if cursor leaves the plane
+    e.target?.setPointerCapture?.(e.pointerId);
+
+    // Lock in a throw start position from the actual field hit-point (world X)
+    const worldX = typeof e.point?.x === 'number' ? e.point.x : 0;
+    const clampedX = Math.max(-3, Math.min(3, worldX));
+    setThrowerX(clampedX);
+    batonRef.current?.reset([clampedX, -1.4, 3]);
+
     setIsAiming(true);
   }, [batonsLeft, kingHit]);
 
   const handlePointerMove = useCallback((e: any) => {
-    // Always track mouse X for thrower position when not aiming
-    if (!isAiming && batonsLeft > 0 && !kingHit) {
-      const centerX = window.innerWidth / 2;
-      const normalizedX = (e.clientX - centerX) / (window.innerWidth / 2);
-      // Clamp to baseline bounds (-3 to 3)
-      setThrowerX(Math.max(-3, Math.min(3, normalizedX * 4)));
+    if (batonsLeft <= 0 || kingHit) return;
+
+    // Use the raycast hit-point on the invisible field plane to drive throw position
+    const worldX = typeof e.point?.x === 'number' ? e.point.x : 0;
+    const nextThrowerX = Math.max(-3, Math.min(3, worldX));
+
+    // Throw origin follows cursor along baseline (only while baton is not in flight)
+    if (!batonInFlight && !isAiming) {
+      setThrowerX(nextThrowerX);
+      batonRef.current?.reset([nextThrowerX, -1.4, 3]);
     }
-    
+
+    // Control aim direction while aiming (screen-space)
     if (isAiming) {
-      // Control aim direction with mouse X position relative to center
       const centerX = window.innerWidth / 2;
       setAimOffset((e.clientX - centerX) * 0.01);
     }
-  }, [isAiming, batonsLeft, kingHit]);
+  }, [isAiming, batonsLeft, kingHit, batonInFlight]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e?: any) => {
     if (isAiming && batonRef.current && batonsLeft > 0 && !kingHit) {
       // Use the oscillating power and aim - adjusted physics for proper arc
       const power = oscillatingPower;
@@ -135,35 +144,40 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       const velocityZ = -6 - power * 6;  // Forward velocity
       const velocityY = 3 + power * 3;   // Upward velocity for arc
       const velocityX = aimOffset * 0.8;
-      
+
       const velocity: [number, number, number] = [velocityX, velocityY, velocityZ];
-      
+
       // End-over-end rotation (around X axis for vertical baton)
       const angularVelocity: [number, number, number] = [
         8 + power * 6,
         aimOffset * 0.5,
         0,
       ];
-      
+
       batonRef.current.throw(velocity, angularVelocity);
-      
+      setBatonInFlight(true);
+
       const newThrowCount = throwCount + 1;
       const newBatonsLeft = batonsLeft - 1;
       const currentThrowerX = throwerX;
-      
+
       setThrowCount(newThrowCount);
       setBatonsLeft(newBatonsLeft);
       onThrowsChange(newThrowCount);
       onBatonsLeftChange(newBatonsLeft);
-      
+
       // Reset baton after delay if batons remaining
       setTimeout(() => {
         if (newBatonsLeft > 0) {
           batonRef.current?.reset([currentThrowerX, -1.4, 3]);
+          setBatonInFlight(false);
         }
       }, 2500);
     }
-    
+
+    // Release capture if present
+    e?.target?.releasePointerCapture?.(e?.pointerId);
+
     setIsAiming(false);
     setAimOffset(0);
   }, [isAiming, oscillatingPower, aimOffset, throwCount, batonsLeft, kingHit, throwerX, onThrowsChange, onBatonsLeftChange]);
@@ -243,7 +257,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       {/* Position indicator on baseline */}
       <mesh position={[throwerX, -1.95, 3]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.15, 0.25, 32]} />
-        <meshBasicMaterial color="#ffffff" opacity={0.6} transparent />
+        <meshBasicMaterial color="hsl(0 0% 100%)" opacity={0.6} transparent />
       </mesh>
       
       {/* Invisible plane to capture throws */}
@@ -252,6 +266,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
       >
         <planeGeometry args={[25, 20]} />
         <meshBasicMaterial transparent opacity={0} />
