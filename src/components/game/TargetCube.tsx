@@ -22,21 +22,21 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
     // Keep body Dynamic; toggle behavior via mass (react-three/cannon does not update `type` on state change)
-    mass: hasBeenHit ? 1.2 : 0,
+    mass: hasBeenHit ? 0.4 : 0,
     position,
     args: [0.3, 0.6, 0.3],
     type: 'Dynamic',
     material: {
-      friction: 0.6,
-      restitution: 0.2,
+      friction: 0.3,
+      restitution: 0.1,
     },
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 0.5) { // Lower threshold for easier knockdown
+        if (velocity > 0.3) { // Lower threshold for easier knockdown
           setHasBeenHit(true);
           onHit(id);
-          api.mass.set(1.2);
+          api.mass.set(0.4);
           // Strong topple impulse - apply at top of cube for rotation
           const impulseX = (Math.random() - 0.5) * 3;
           api.applyImpulse([impulseX, 1, -6], [0, 0.3, 0]);
