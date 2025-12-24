@@ -149,6 +149,7 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       
       const newThrowCount = throwCount + 1;
       const newBatonsLeft = batonsLeft - 1;
+      const currentThrowerX = throwerX;
       
       setThrowCount(newThrowCount);
       setBatonsLeft(newBatonsLeft);
@@ -158,14 +159,14 @@ const GameSceneContent = ({ onScoreChange, onThrowsChange, onBatonsLeftChange, o
       // Reset baton after delay if batons remaining
       setTimeout(() => {
         if (newBatonsLeft > 0) {
-          batonRef.current?.reset([throwerX, -1.4, 3]);
+          batonRef.current?.reset([currentThrowerX, -1.4, 3]);
         }
       }, 2500);
     }
     
     setIsAiming(false);
     setAimOffset(0);
-  }, [isAiming, oscillatingPower, aimOffset, throwCount, batonsLeft, kingHit, onThrowsChange, onBatonsLeftChange]);
+  }, [isAiming, oscillatingPower, aimOffset, throwCount, batonsLeft, kingHit, throwerX, onThrowsChange, onBatonsLeftChange]);
 
   const handleCubeHit = useCallback((id: number) => {
     setHitCubes(prev => {
