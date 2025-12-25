@@ -21,10 +21,13 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: hasBeenHit ? 0.03 : 0,
+    // Keep a small mass at all times so baton contact can physically tip the cube.
+    mass: 0.03,
     position,
     args: [0.3, 0.6, 0.3],
     type: 'Dynamic',
+    linearDamping: 0.25,
+    angularDamping: 0.35,
     material: {
       friction: 0.1,
       restitution: 0.01,
