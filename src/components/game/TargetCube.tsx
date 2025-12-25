@@ -36,13 +36,13 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
           setHasBeenHit(true);
           onHit(id);
           api.mass.set(0.03);
-          // Strong topple impulse
-          const impulseX = (Math.random() - 0.5) * 2;
-          api.applyImpulse([impulseX, 0.5, -4], [0, 0.3, 0]);
+          // Gentle topple - just enough to tip over
+          const impulseX = (Math.random() - 0.5) * 0.3;
+          api.applyImpulse([impulseX, 0.1, -0.5], [0, 0.3, 0]);
           api.angularVelocity.set(
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 5,
-            -8 + Math.random() * 2
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 1,
+            -3 + Math.random() * 0.5
           );
         }
       }
