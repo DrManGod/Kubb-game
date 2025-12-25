@@ -31,18 +31,22 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
     },
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
-        const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 0.05) {
+        const contactImpact = e.contact?.impactVelocity;
+        const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
+        const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
+        const velocity = contactImpact ?? bodySpeed;
+        if (velocity > 0.03) {
           setHasBeenHit(true);
           onHit(id);
           api.mass.set(0.03);
-          // Gentle topple - just enough to tip over
-          const impulseX = (Math.random() - 0.5) * 0.3;
-          api.applyImpulse([impulseX, 0.1, -0.5], [0, 0.3, 0]);
+          // Gentle topple - enough to tip without launching
+          api.wakeUp();
+          const impulseX = (Math.random() - 0.5) * 0.6;
+          api.applyImpulse([impulseX, 0.2, -1.2], [0, 0.3, 0]);
           api.angularVelocity.set(
-            (Math.random() - 0.5) * 2,
-            (Math.random() - 0.5) * 1,
-            -3 + Math.random() * 0.5
+            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 1.5,
+            -5 + Math.random() * 1
           );
         }
       }
