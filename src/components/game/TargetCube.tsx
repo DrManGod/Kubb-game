@@ -21,7 +21,7 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: hasBeenHit ? 0.05 : 0,
+    mass: hasBeenHit ? 0.03 : 0,
     position,
     args: [0.3, 0.6, 0.3],
     type: 'Dynamic',
@@ -32,10 +32,10 @@ export const TargetCube = ({ position, color, id, onHit, isHit }: TargetCubeProp
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 0.08) {
+        if (velocity > 0.05) {
           setHasBeenHit(true);
           onHit(id);
-          api.mass.set(0.05);
+          api.mass.set(0.03);
           // Strong topple impulse
           const impulseX = (Math.random() - 0.5) * 2;
           api.applyImpulse([impulseX, 0.5, -4], [0, 0.3, 0]);
