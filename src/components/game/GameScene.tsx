@@ -10,13 +10,17 @@ import { AimTrajectory } from './AimTrajectory';
 
 const CUBE_COLORS = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
 
-// Kubb-style positions - spread across the back line, sitting on ground (Y=-2 + half height)
+// Kubb-style positions - evenly spaced along the back baseline
+// Field width = 8, back line Z = -fieldLength/2 - 3 = -9.4
+const fieldWidth = 8;
+const backLineZ = -9.4;
+const spacing = fieldWidth / 6; // 5 cubes need 6 segments for even spacing from edges
 const CUBE_POSITIONS: [number, number, number][] = [
-  [-2.5, -1.7, -6],
-  [-1.25, -1.7, -6],
-  [0, -1.7, -6],
-  [1.25, -1.7, -6],
-  [2.5, -1.7, -6],
+  [-fieldWidth / 2 + spacing, -1.7, backLineZ],
+  [-fieldWidth / 2 + spacing * 2, -1.7, backLineZ],
+  [0, -1.7, backLineZ],
+  [fieldWidth / 2 - spacing * 2, -1.7, backLineZ],
+  [fieldWidth / 2 - spacing, -1.7, backLineZ],
 ];
 
 // King on center line, closer to thrower (Z=-3 is center line)
