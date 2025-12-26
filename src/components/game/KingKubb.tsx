@@ -18,23 +18,35 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    // Keep body Dynamic; toggle behavior via mass (react-three/cannon does not update `type` on state change)
-    mass: hasBeenHit ? 2 : 0,
+    // Mass slightly higher than cubes (0.03 + 0.01 = 0.04)
+    mass: 0.04,
     position,
     args: [0.4, 1.0, 0.4],
     type: 'Dynamic',
+    linearDamping: 0.25,
+    angularDamping: 0.35,
     material: {
-      friction: 0.6,
-      restitution: 0.2,
+      friction: 0.1,
+      restitution: 0.01,
     },
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
-        const velocity = e.contact?.impactVelocity || 0;
-        if (velocity > 0.8) {
+        const contactImpact = e.contact?.impactVelocity;
+        const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
+        const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
+        const velocity = contactImpact ?? bodySpeed;
+        // Same threshold as cubes (0.03)
+        if (velocity > 0.03) {
           setHasBeenHit(true);
           onHit();
-          api.mass.set(2);
-          api.applyImpulse([0, 3, -5], [0, 0.4, 0]);
+          api.wakeUp();
+          const impulseX = (Math.random() - 0.5) * 0.6;
+          api.applyImpulse([impulseX, 0.2, -1.2], [0, 0.4, 0]);
+          api.angularVelocity.set(
+            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 1.5,
+            -5 + Math.random() * 1
+          );
         }
       }
     },

@@ -124,19 +124,6 @@ export const GameUI = ({ score, throws, batonsLeft, kingHitPremature = false, hi
         </div>
       )}
       
-      {/* Out of batons overlay */}
-      {outOfBatons && (
-        <div className="absolute inset-0 flex items-center justify-center bg-foreground/20 backdrop-blur-sm pointer-events-auto">
-          <div className="bg-card rounded-2xl p-8 shadow-2xl bounce-in text-center">
-            <h2 className="text-4xl font-bold text-destructive mb-2">Out of Batons!</h2>
-            <p className="text-muted-foreground mb-4">You hit {score}/5 kubbs. Try again!</p>
-            <Button onClick={onReset} size="lg" className="shadow-lg">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Try Again
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
