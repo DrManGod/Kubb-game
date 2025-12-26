@@ -1,26 +1,27 @@
 import { useState, useCallback } from 'react';
 import { GameScene } from '@/components/game/GameScene';
 import { GameUI } from '@/components/game/GameUI';
+import { GamePhase, FieldKubb } from '@/hooks/useGameState';
 
 const Index = () => {
-  const [score, setScore] = useState(0);
-  const [throws, setThrows] = useState(0);
-  const [batonsLeft, setBatonsLeft] = useState(6);
+  const [phase, setPhase] = useState<GamePhase>('player_turn');
+  const [playerScore, setPlayerScore] = useState(0);
+  const [botScore, setBotScore] = useState(0);
+  const [playerBatonsLeft, setPlayerBatonsLeft] = useState(6);
+  const [botBatonsLeft, setBotBatonsLeft] = useState(6);
+  const [totalThrows, setTotalThrows] = useState(0);
+  const [fieldKubbs, setFieldKubbs] = useState<FieldKubb[]>([]);
   const [resetKey, setResetKey] = useState(0);
-  const [kingHitPremature, setKingHitPremature] = useState(false);
-  const [hitKubbs, setHitKubbs] = useState<Set<number>>(new Set());
 
   const handleReset = useCallback(() => {
-    setScore(0);
-    setThrows(0);
-    setBatonsLeft(6);
-    setKingHitPremature(false);
-    setHitKubbs(new Set());
+    setPhase('player_turn');
+    setPlayerScore(0);
+    setBotScore(0);
+    setPlayerBatonsLeft(6);
+    setBotBatonsLeft(6);
+    setTotalThrows(0);
+    setFieldKubbs([]);
     setResetKey(prev => prev + 1);
-  }, []);
-
-  const handleKingHit = useCallback((premature: boolean) => {
-    setKingHitPremature(premature);
   }, []);
 
   return (
@@ -34,21 +35,25 @@ const Index = () => {
       
       {/* 3D Game Canvas */}
       <GameScene 
-        onScoreChange={setScore}
-        onThrowsChange={setThrows}
-        onBatonsLeftChange={setBatonsLeft}
-        onKingHit={handleKingHit}
-        onHitKubbsChange={setHitKubbs}
+        onPhaseChange={setPhase}
+        onPlayerScoreChange={setPlayerScore}
+        onBotScoreChange={setBotScore}
+        onPlayerBatonsChange={setPlayerBatonsLeft}
+        onBotBatonsChange={setBotBatonsLeft}
+        onThrowsChange={setTotalThrows}
+        onFieldKubbsChange={setFieldKubbs}
         resetKey={resetKey}
       />
       
       {/* UI Overlay */}
       <GameUI 
-        score={score}
-        throws={throws}
-        batonsLeft={batonsLeft}
-        kingHitPremature={kingHitPremature}
-        hitKubbs={hitKubbs}
+        phase={phase}
+        playerScore={playerScore}
+        botScore={botScore}
+        playerBatonsLeft={playerBatonsLeft}
+        botBatonsLeft={botBatonsLeft}
+        totalThrows={totalThrows}
+        fieldKubbs={fieldKubbs}
         onReset={handleReset}
       />
     </div>
