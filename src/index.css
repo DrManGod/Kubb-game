@@ -133,3 +133,31 @@
   50% { transform: scale(1.1); }
   100% { transform: scale(1); opacity: 1; }
 }
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(234, 179, 8, 0.8);
+  }
+}
+
+.animate-in {
+  animation: slide-in-from-top 0.5s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
