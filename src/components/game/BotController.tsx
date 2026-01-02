@@ -6,7 +6,8 @@ interface BotControllerProps {
   batonRef: React.RefObject<BatonRef>;
   isActive: boolean;
   batonsLeft: number;
-  fieldKubbs: FieldKubbType[];
+  fieldKubbs: FieldKubbType[]; // Field kubbs on player's side that bot targets
+  playerBaselineKubbsDown: Set<number>;
   onThrow: () => void;
   onTurnEnd: () => void;
 }
@@ -16,37 +17,75 @@ export const useBotController = ({
   isActive,
   batonsLeft,
   fieldKubbs,
+  playerBaselineKubbsDown,
   onThrow,
   onTurnEnd,
 }: BotControllerProps) => {
   const throwTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isThrowingRef = useRef(false);
 
-  const getTargetKubb = useCallback(() => {
-    // Target standing field kubbs
-    const standingKubbs = fieldKubbs.filter(k => !k.isDown);
-    if (standingKubbs.length === 0) return null;
+  // Bot throws from its baseline (Z = -9.4) toward player's side
+  const botBaselineZ = -9.4;
+  const playerBaselineZ = 3;
+
+  // Standing field kubbs on player's side
+  const standingFieldKubbs = fieldKubbs.filter(k => !k.isDown);
+  
+  // Must clear field kubbs before targeting player baseline
+  const mustClearFieldKubbsFirst = standingFieldKubbs.length > 0;
+
+  const getTargetPosition = useCallback((): [number, number, number] | null => {
+    if (mustClearFieldKubbsFirst && standingFieldKubbs.length > 0) {
+      // Target a random standing field kubb
+      const target = standingFieldKubbs[Math.floor(Math.random() * standingFieldKubbs.length)];
+      return target.position;
+    }
     
-    // Pick a random standing kubb
-    return standingKubbs[Math.floor(Math.random() * standingKubbs.length)];
-  }, [fieldKubbs]);
+    // Target player baseline kubbs that haven't been hit
+    const standingPlayerBaseline: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      if (!playerBaselineKubbsDown.has(i)) {
+        standingPlayerBaseline.push(i);
+      }
+    }
+    
+    if (standingPlayerBaseline.length === 0) return null;
+    
+    // Pick a random standing baseline kubb
+    const targetId = standingPlayerBaseline[Math.floor(Math.random() * standingPlayerBaseline.length)];
+    
+    // Calculate position based on ID (same spacing as player baseline)
+    const fieldWidth = 8;
+    const spacing = fieldWidth / 6;
+    const positions: [number, number, number][] = [
+      [-fieldWidth / 2 + spacing, -1.7, playerBaselineZ],
+      [-fieldWidth / 2 + spacing * 2, -1.7, playerBaselineZ],
+      [0, -1.7, playerBaselineZ],
+      [fieldWidth / 2 - spacing * 2, -1.7, playerBaselineZ],
+      [fieldWidth / 2 - spacing, -1.7, playerBaselineZ],
+    ];
+    
+    return positions[targetId];
+  }, [mustClearFieldKubbsFirst, standingFieldKubbs, playerBaselineKubbsDown]);
 
   const performThrow = useCallback(() => {
     if (!batonRef.current || batonsLeft <= 0 || isThrowingRef.current) return;
 
-    const target = getTargetKubb();
+    const targetPos = getTargetPosition();
+    if (!targetPos) {
+      // No targets, end turn
+      onTurnEnd();
+      return;
+    }
     
-    // Bot throws from back line (Z = -9.4) toward player's side
-    const botBaselineZ = -9.4;
-    const throwX = target ? target.position[0] + (Math.random() - 0.5) * 0.8 : (Math.random() - 0.5) * 2;
+    const throwX = targetPos[0] + (Math.random() - 0.5) * 0.8;
     
     // Reset baton to bot's position
     batonRef.current.reset([throwX, -1.4, botBaselineZ]);
     isThrowingRef.current = true;
 
     // Calculate throw velocity toward target
-    const targetZ = target ? target.position[2] : 1;
-    const distance = Math.abs(targetZ - botBaselineZ);
+    const distance = Math.abs(targetPos[2] - botBaselineZ);
     
     // Bot has ~70% accuracy
     const accuracy = 0.7 + Math.random() * 0.2;
@@ -54,9 +93,7 @@ export const useBotController = ({
     
     const velocityZ = 6 + power * 4; // Forward (positive Z toward player)
     const velocityY = 2.5 + power * 2;
-    const velocityX = target 
-      ? (target.position[0] - throwX) * 0.3 * accuracy + (Math.random() - 0.5) * 0.5
-      : (Math.random() - 0.5) * 1;
+    const velocityX = (targetPos[0] - throwX) * 0.3 * accuracy + (Math.random() - 0.5) * 0.5;
 
     setTimeout(() => {
       if (!batonRef.current) return;
@@ -68,7 +105,7 @@ export const useBotController = ({
       onThrow();
       isThrowingRef.current = false;
     }, 500);
-  }, [batonRef, batonsLeft, getTargetKubb, onThrow]);
+  }, [batonRef, batonsLeft, getTargetPosition, onThrow, onTurnEnd]);
 
   useEffect(() => {
     if (!isActive) {
@@ -79,28 +116,16 @@ export const useBotController = ({
       return;
     }
 
-    // Bot throws with delay between each
-    if (batonsLeft > 0) {
-      const standingKubbs = fieldKubbs.filter(k => !k.isDown);
-      
-      // If no kubbs to throw at, end turn immediately
-      if (standingKubbs.length === 0) {
-        throwTimeoutRef.current = setTimeout(() => {
-          onTurnEnd();
-        }, 1000);
-        return;
-      }
+    // Check if there are any targets
+    const hasTargets = standingFieldKubbs.length > 0 || 
+      Array.from({ length: 5 }, (_, i) => i).some(i => !playerBaselineKubbsDown.has(i));
 
+    if (batonsLeft > 0 && hasTargets) {
       throwTimeoutRef.current = setTimeout(() => {
         performThrow();
-        
-        // Schedule next throw or end turn
-        if (batonsLeft > 1) {
-          // Next throw will be triggered by this effect re-running
-        }
       }, 1500);
     } else {
-      // Out of batons, end turn after delay
+      // Out of batons or no targets, end turn after delay
       throwTimeoutRef.current = setTimeout(() => {
         onTurnEnd();
       }, 2000);
@@ -111,7 +136,7 @@ export const useBotController = ({
         clearTimeout(throwTimeoutRef.current);
       }
     };
-  }, [isActive, batonsLeft, fieldKubbs, performThrow, onTurnEnd]);
+  }, [isActive, batonsLeft, standingFieldKubbs, playerBaselineKubbsDown, performThrow, onTurnEnd]);
 
   return { performThrow };
 };
