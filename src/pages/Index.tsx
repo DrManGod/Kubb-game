@@ -52,6 +52,9 @@ const Index = () => {
         onBotBatonsChange={setBotBatonsLeft}
         onThrowsChange={setTotalThrows}
         onFieldKubbsChange={setFieldKubbs}
+        onPlayerBaselineChange={setBaselineKubbsPlayer}
+        onBotBaselineChange={setBaselineKubbsBot}
+        onRoundChange={setCurrentRound}
         resetKey={resetKey}
       />
       
