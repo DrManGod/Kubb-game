@@ -12,6 +12,11 @@ const Index = () => {
   const [totalThrows, setTotalThrows] = useState(0);
   const [fieldKubbs, setFieldKubbs] = useState<FieldKubb[]>([]);
   const [resetKey, setResetKey] = useState(0);
+  const [baselineKubbsPlayer, setBaselineKubbsPlayer] = useState(5);
+  const [baselineKubbsBot, setBaselineKubbsBot] = useState(5);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [kingStanding, setKingStanding] = useState(true);
+  const [advantageLine, setAdvantageLine] = useState<number | null>(null);
 
   const handleReset = useCallback(() => {
     setPhase('player_turn');
@@ -22,6 +27,11 @@ const Index = () => {
     setTotalThrows(0);
     setFieldKubbs([]);
     setResetKey(prev => prev + 1);
+    setBaselineKubbsPlayer(5);
+    setBaselineKubbsBot(5);
+    setCurrentRound(1);
+    setKingStanding(true);
+    setAdvantageLine(null);
   }, []);
 
   return (
@@ -55,6 +65,11 @@ const Index = () => {
         totalThrows={totalThrows}
         fieldKubbs={fieldKubbs}
         onReset={handleReset}
+        baselineKubbsPlayer={baselineKubbsPlayer}
+        baselineKubbsBot={baselineKubbsBot}
+        currentRound={currentRound}
+        kingStanding={kingStanding}
+        advantageLine={advantageLine}
       />
     </div>
   );
