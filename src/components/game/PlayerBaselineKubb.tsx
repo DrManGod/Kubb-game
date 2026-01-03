@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
+import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
 
 interface PlayerBaselineKubbProps {
   id: number;
@@ -29,6 +30,9 @@ export const PlayerBaselineKubb = ({ id, position, onHit, isHit }: PlayerBaselin
       friction: 0.1,
       restitution: 0.01,
     },
+    // Player baseline kubbs - only collide with bot batons
+    collisionFilterGroup: COLLISION_GROUPS.PLAYER_KUBBS,
+    collisionFilterMask: COLLISION_MASKS.PLAYER_KUBBS,
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const contactImpact = e.contact?.impactVelocity;
@@ -40,7 +44,6 @@ export const PlayerBaselineKubb = ({ id, position, onHit, isHit }: PlayerBaselin
           onHit(id);
           api.wakeUp();
           const impulseX = (Math.random() - 0.5) * 0.6;
-          // Fall backward (toward player's back)
           api.applyImpulse([impulseX, 0.2, 1.2], [0, 0.3, 0]);
           api.angularVelocity.set(
             (Math.random() - 0.5) * 3,
@@ -56,7 +59,7 @@ export const PlayerBaselineKubb = ({ id, position, onHit, isHit }: PlayerBaselin
     <mesh ref={cubeRef} castShadow receiveShadow>
       <boxGeometry args={[0.3, 0.6, 0.3]} />
       <meshStandardMaterial
-        color={hasBeenHit || isHit ? '#555555' : '#2563eb'} // Blue for player kubbs
+        color={hasBeenHit || isHit ? '#555555' : '#2563eb'}
         roughness={0.4}
         metalness={0.05}
         emissive={hasBeenHit || isHit ? '#000000' : '#1d4ed8'}

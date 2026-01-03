@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
+import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
 
 interface KingKubbProps {
   position: [number, number, number];
@@ -18,7 +19,6 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    // Mass slightly higher than cubes (0.03 + 0.01 = 0.04)
     mass: 0.04,
     position,
     args: [0.4, 1.0, 0.4],
@@ -29,13 +29,15 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
       friction: 0.1,
       restitution: 0.01,
     },
+    // King collides with both player and bot batons
+    collisionFilterGroup: COLLISION_GROUPS.KING,
+    collisionFilterMask: COLLISION_MASKS.KING,
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const contactImpact = e.contact?.impactVelocity;
         const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
         const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
         const velocity = contactImpact ?? bodySpeed;
-        // Same threshold as cubes (0.03)
         if (velocity > 0.03) {
           setHasBeenHit(true);
           onHit();
@@ -54,7 +56,6 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
 
   return (
     <group>
-      {/* Main body */}
       <mesh ref={cubeRef} castShadow receiveShadow>
         <boxGeometry args={[0.4, 1.0, 0.4]} />
         <meshStandardMaterial
@@ -65,7 +66,6 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
           emissiveIntensity={hasBeenHit || isHit ? 0 : 0.3}
         />
       </mesh>
-      {/* Crown indicator on top - visual only */}
       {!hasBeenHit && !isHit && (
         <mesh position={[position[0], position[1] + 0.6, position[2]]} castShadow>
           <cylinderGeometry args={[0.15, 0.2, 0.15, 6]} />

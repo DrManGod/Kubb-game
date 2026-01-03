@@ -80,6 +80,9 @@ export const useBotController = ({
     
     const throwX = targetPos[0] + (Math.random() - 0.5) * 0.8;
     
+    // Set baton to bot owner for collision filtering
+    batonRef.current.setOwner(false);
+    
     // Reset baton to bot's position
     batonRef.current.reset([throwX, -1.4, botBaselineZ]);
     isThrowingRef.current = true;

@@ -45,7 +45,13 @@ const Index = () => {
       
       {/* 3D Game Canvas */}
       <GameScene 
-        onPhaseChange={setPhase}
+        onPhaseChange={(newPhase) => {
+          setPhase(newPhase);
+          // Update king standing based on phase
+          if (newPhase === 'player_win' || newPhase === 'player_lose') {
+            setKingStanding(false);
+          }
+        }}
         onPlayerScoreChange={setPlayerScore}
         onBotScoreChange={setBotScore}
         onPlayerBatonsChange={setPlayerBatonsLeft}
