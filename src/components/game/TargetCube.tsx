@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
+import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
 
 interface TargetCubeProps {
   position: [number, number, number];
@@ -17,14 +18,12 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
   const [hasBeenHit, setHasBeenHit] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
-  // Delay collision detection to prevent false positives on init
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(timer);
   }, []);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    // Keep a small mass at all times so baton contact can physically tip the cube.
     mass: 0.03,
     position,
     args: [0.3, 0.6, 0.3],
@@ -35,6 +34,9 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
       friction: 0.1,
       restitution: 0.01,
     },
+    // Bot baseline kubbs - only collide with player batons
+    collisionFilterGroup: COLLISION_GROUPS.BOT_KUBBS,
+    collisionFilterMask: COLLISION_MASKS.BOT_KUBBS,
     onCollide: (e) => {
       if (!hasBeenHit && isReady && !disabled && e.body) {
         const contactImpact = e.contact?.impactVelocity;
@@ -45,7 +47,6 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
           setHasBeenHit(true);
           onHit(id);
           api.mass.set(0.03);
-          // Gentle topple - enough to tip without launching
           api.wakeUp();
           const impulseX = (Math.random() - 0.5) * 0.6;
           api.applyImpulse([impulseX, 0.2, -1.2], [0, 0.3, 0]);

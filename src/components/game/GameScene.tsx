@@ -352,6 +352,9 @@ const GameSceneContent = ({
 
   const handlePointerUp = useCallback((e?: any) => {
     if (isAiming && batonRef.current && playerBatonsLeft > 0 && !kingHit && phase === 'player_turn') {
+      // Set baton to player owner for collision filtering
+      batonRef.current.setOwner(true);
+      
       const power = oscillatingPower;
       const velocityZ = -6 - power * 6;
       const velocityY = 3 + power * 3;
@@ -412,17 +415,42 @@ const GameSceneContent = ({
     });
   }, [onFieldKubbsChange]);
 
+  // Check remaining opponent kubbs
+  const getOpponentKubbsRemaining = useCallback((currentPlayer: 'player' | 'bot') => {
+    if (currentPlayer === 'player') {
+      // Player needs to knock all bot kubbs
+      const botBaselineRemaining = 5 - botBaselineKubbsDown.size;
+      const botFieldKubbsRemaining = fieldKubbs.filter(k => k.side === 'bot' && !k.isDown).length;
+      return botBaselineRemaining + botFieldKubbsRemaining;
+    } else {
+      // Bot needs to knock all player kubbs
+      const playerBaselineRemaining = 5 - playerBaselineKubbsDown.size;
+      const playerFieldKubbsRemaining = fieldKubbs.filter(k => k.side === 'player' && !k.isDown).length;
+      return playerBaselineRemaining + playerFieldKubbsRemaining;
+    }
+  }, [botBaselineKubbsDown, playerBaselineKubbsDown, fieldKubbs]);
+
   const handleKingHit = useCallback(() => {
     if (!kingHit) {
       setKingHit(true);
-      // Win only if all baseline kubbs and field kubbs are down
-      const allBotBaselineDown = botBaselineKubbsDown.size === 5;
-      const allFieldKubbsDown = fieldKubbs.every(k => k.isDown);
-      const newPhase = (allBotBaselineDown && allFieldKubbsDown) ? 'player_win' : 'player_lose';
-      setPhase(newPhase);
-      onPhaseChange(newPhase);
+      
+      // Determine who knocked the king based on current phase
+      const currentPlayer = phase === 'player_turn' || phase === 'player_kubbs_flying' ? 'player' : 'bot';
+      const opponentKubbsRemaining = getOpponentKubbsRemaining(currentPlayer);
+      
+      if (opponentKubbsRemaining > 0) {
+        // King knocked too early - current player LOSES
+        const newPhase = currentPlayer === 'player' ? 'player_lose' : 'player_win';
+        setPhase(newPhase);
+        onPhaseChange(newPhase);
+      } else {
+        // All opponent kubbs were down - current player WINS
+        const newPhase = currentPlayer === 'player' ? 'player_win' : 'player_lose';
+        setPhase(newPhase);
+        onPhaseChange(newPhase);
+      }
     }
-  }, [kingHit, botBaselineKubbsDown.size, fieldKubbs, onPhaseChange]);
+  }, [kingHit, phase, getOpponentKubbsRemaining, onPhaseChange]);
 
   return (
     <>
@@ -478,6 +506,7 @@ const GameSceneContent = ({
             position={kubb.position}
             onHit={handleFieldKubbHit}
             isHit={kubb.isDown}
+            side={kubb.side}
           />
         ))}
         
