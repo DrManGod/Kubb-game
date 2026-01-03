@@ -269,6 +269,8 @@ export const GameUI = ({
 }: GameUIProps) => {
   const isPlayerTurn = phase === 'player_turn';
   const isBotTurn = phase === 'bot_turn';
+  const isPlayerThrowingKubbs = phase === 'player_throw_kubbs';
+  const isBotThrowingKubbs = phase === 'bot_throw_kubbs';
   const isWinner = phase === 'player_win';
   const isLoser = phase === 'player_lose';
   const isGameOver = isWinner || isLoser;
@@ -279,6 +281,8 @@ export const GameUI = ({
   const getPhaseConfig = () => {
     if (isWinner) return { bg: 'bg-green-600', text: '🏆 Du vann!', glow: 'shadow-green-500/50' };
     if (isLoser) return { bg: 'bg-red-600', text: '💥 Du förlorade!', glow: 'shadow-red-500/50' };
+    if (isPlayerThrowingKubbs) return { bg: 'bg-amber-600', text: '🎯 Kasta kubbar till motståndarens sida', glow: 'shadow-amber-500/50' };
+    if (isBotThrowingKubbs) return { bg: 'bg-red-600', text: '🤖 Boten kastar tillbaka kubbar...', glow: 'shadow-red-500/50' };
     if (isBotTurn) return { bg: 'bg-red-600', text: '🤖 Motståndaren kastar...', glow: 'shadow-red-500/50' };
     return { bg: 'bg-blue-600', text: '🎯 Din tur!', glow: 'shadow-blue-500/50' };
   };
@@ -357,6 +361,8 @@ export const GameUI = ({
           <p className="text-center text-white/80 text-sm font-medium">
             {isPlayerTurn
               ? '🎯 Klicka och håll för att sikta, släpp för att kasta!'
+              : isPlayerThrowingKubbs
+              ? '🎯 Använd reglagen för att kasta kubbarna till motståndaren!'
               : '🤖 Vänta medan motståndaren kastar...'}
           </p>
         </div>
