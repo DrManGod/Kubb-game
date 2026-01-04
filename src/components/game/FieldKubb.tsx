@@ -20,8 +20,8 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
     return () => clearTimeout(timer);
   }, []);
   
-  // Field kubbs on player's side can only be hit by player batons
-  // Field kubbs on bot's side can only be hit by bot batons
+  // Field kubbs on player's side can only be hit by bot batons
+  // Field kubbs on bot's side can only be hit by player batons
   const collisionGroup = side === 'player' ? COLLISION_GROUPS.PLAYER_KUBBS : COLLISION_GROUPS.BOT_KUBBS;
   const collisionMask = side === 'player' ? COLLISION_MASKS.PLAYER_KUBBS : COLLISION_MASKS.BOT_KUBBS;
   
@@ -61,9 +61,9 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
     },
   }));
 
-  // Color based on side - blue tint for player side, red tint for bot side
-  const baseColor = side === 'player' ? '#6B4423' : '#8B3A3A';
-  const emissiveColor = side === 'player' ? '#5C3A1D' : '#7A2828';
+  // Color based on side - blue tint for player side (to be hit by bot), brown for bot side (to be hit by player)
+  const baseColor = side === 'player' ? '#6B4423' : '#8B6914';
+  const emissiveColor = side === 'player' ? '#5C3A1D' : '#7A5812';
 
   return (
     <mesh ref={cubeRef} castShadow receiveShadow>

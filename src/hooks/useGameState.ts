@@ -70,8 +70,117 @@ export const useGameState = () => {
     });
   }, []);
 
+  const setPhase = useCallback((phase: GamePhase) => {
+    setState(prev => ({ ...prev, phase }));
+  }, []);
+
+  const decrementPlayerBatons = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      playerBatonsLeft: prev.playerBatonsLeft - 1,
+      totalPlayerThrows: prev.totalPlayerThrows + 1,
+    }));
+  }, []);
+
+  const decrementBotBatons = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      botBatonsLeft: prev.botBatonsLeft - 1,
+    }));
+  }, []);
+
+  const resetBatons = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      playerBatonsLeft: BATONS_PER_TURN,
+      botBatonsLeft: BATONS_PER_TURN,
+    }));
+  }, []);
+
+  const knockDownBotBaseline = useCallback((id: number) => {
+    setState(prev => {
+      const newDown = new Set(prev.botBaselineKubbsDown);
+      newDown.add(id);
+      return {
+        ...prev,
+        botBaselineKubbsDown: newDown,
+        playerScore: newDown.size,
+      };
+    });
+  }, []);
+
+  const knockDownPlayerBaseline = useCallback((id: number) => {
+    setState(prev => {
+      const newDown = new Set(prev.playerBaselineKubbsDown);
+      newDown.add(id);
+      return {
+        ...prev,
+        playerBaselineKubbsDown: newDown,
+        botScore: newDown.size,
+      };
+    });
+  }, []);
+
+  const addFieldKubb = useCallback((kubb: FieldKubb) => {
+    setState(prev => ({
+      ...prev,
+      fieldKubbs: [...prev.fieldKubbs, kubb],
+    }));
+  }, []);
+
+  const knockDownFieldKubb = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      fieldKubbs: prev.fieldKubbs.map(k => 
+        k.id === id ? { ...k, isDown: true } : k
+      ),
+    }));
+  }, []);
+
+  const setKubbsToThrow = useCallback((kubbs: KubbToThrow[]) => {
+    setState(prev => ({
+      ...prev,
+      kubbsToThrow: kubbs,
+    }));
+  }, []);
+
+  const removeKubbToThrow = useCallback((id: string) => {
+    setState(prev => ({
+      ...prev,
+      kubbsToThrow: prev.kubbsToThrow.filter(k => k.id !== id),
+    }));
+  }, []);
+
+  const setKingDown = useCallback((down: boolean) => {
+    setState(prev => ({ ...prev, kingDown: down }));
+  }, []);
+
+  const incrementRound = useCallback(() => {
+    setState(prev => ({ ...prev, currentRound: prev.currentRound + 1 }));
+  }, []);
+
+  const clearDownFieldKubbs = useCallback((side: 'player' | 'bot') => {
+    setState(prev => ({
+      ...prev,
+      fieldKubbs: prev.fieldKubbs.filter(k => !(k.side === side && k.isDown)),
+    }));
+  }, []);
+
   return {
     state,
     resetGame,
+    setPhase,
+    decrementPlayerBatons,
+    decrementBotBatons,
+    resetBatons,
+    knockDownBotBaseline,
+    knockDownPlayerBaseline,
+    addFieldKubb,
+    knockDownFieldKubb,
+    setKubbsToThrow,
+    removeKubbToThrow,
+    setKingDown,
+    incrementRound,
+    clearDownFieldKubbs,
   };
 };

@@ -197,23 +197,18 @@ const GameSceneContent = ({
     onRoundChange(1);
   }, [resetKey]);
 
+  // Track field kubbs to add after bot throws
+  const pendingFieldKubbsRef = useRef<FieldKubbType[]>([]);
+
   // Handle bot throwing kubbs back (automatic)
   useEffect(() => {
     if (phase === 'bot_throw_kubbs' && kubbsToThrow.length > 0) {
+      pendingFieldKubbsRef.current = [];
+      
       const throwNextKubb = (index: number) => {
         if (index >= kubbsToThrow.length) {
-          // All kubbs thrown, transition to bot turn
-          const newFieldKubbs = kubbsToThrow.map((_, i) => {
-            const positions = generateFieldKubbPositions(1, 'player');
-            return {
-              id: `field-player-${Date.now()}-${i}`,
-              position: positions[0],
-              isDown: false,
-              side: 'player' as const,
-            };
-          });
-          
-          const updatedFieldKubbs = [...fieldKubbs.filter(k => !k.isDown), ...newFieldKubbs];
+          // All kubbs thrown, add all field kubbs and transition to bot turn
+          const updatedFieldKubbs = [...fieldKubbs.filter(k => !k.isDown), ...pendingFieldKubbsRef.current];
           setFieldKubbs(updatedFieldKubbs);
           onFieldKubbsChange(updatedFieldKubbs);
           
@@ -223,6 +218,7 @@ const GameSceneContent = ({
           setBotBatonsLeft(BATONS_PER_TURN);
           onPhaseChange('bot_turn');
           onBotBatonsChange(BATONS_PER_TURN);
+          batonRef.current?.setOwner(false);
           batonRef.current?.reset([0, -1.4, botBackLineZ]);
           return;
         }
@@ -231,24 +227,73 @@ const GameSceneContent = ({
         const power = 50 + Math.random() * 30;
         const angle = 40 + Math.random() * 15;
         const spin = -50 + Math.random() * 100;
+        
+        // Random X position for throw
+        const throwX = (Math.random() - 0.5) * 4;
 
         setThrownKubbData({
           power,
           angle,
           spin,
-          startPos: [0, -1.4, botBackLineZ],
+          startPos: [throwX, -1.4, botBackLineZ],
           targetSide: 'player',
         });
 
-        setTimeout(() => {
-          setThrownKubbData(null);
-          throwNextKubb(index + 1);
-        }, 1500);
+        setCurrentKubbThrowIndex(index);
       };
 
-      setTimeout(() => throwNextKubb(0), 500);
+      const timer = setTimeout(() => throwNextKubb(0), 500);
+      return () => clearTimeout(timer);
     }
   }, [phase, kubbsToThrow.length]);
+  
+  // Handle bot kubb landing
+  const handleBotKubbLanded = useCallback((finalPosition: [number, number, number]) => {
+    const newKubb: FieldKubbType = {
+      id: `field-player-${Date.now()}-${currentKubbThrowIndex}`,
+      position: finalPosition,
+      isDown: false,
+      side: 'player',
+    };
+    pendingFieldKubbsRef.current.push(newKubb);
+    
+    setThrownKubbData(null);
+    
+    // Schedule next throw
+    const nextIndex = currentKubbThrowIndex + 1;
+    if (nextIndex >= kubbsToThrow.length) {
+      // All done - transition handled in the effect
+      const updatedFieldKubbs = [...fieldKubbs.filter(k => !k.isDown), ...pendingFieldKubbsRef.current];
+      setFieldKubbs(updatedFieldKubbs);
+      onFieldKubbsChange(updatedFieldKubbs);
+      
+      setKubbsToThrow([]);
+      setCurrentKubbThrowIndex(0);
+      setPhase('bot_turn');
+      setBotBatonsLeft(BATONS_PER_TURN);
+      onPhaseChange('bot_turn');
+      onBotBatonsChange(BATONS_PER_TURN);
+      batonRef.current?.setOwner(false);
+      batonRef.current?.reset([0, -1.4, botBackLineZ]);
+    } else {
+      // Throw next kubb after a short delay
+      setTimeout(() => {
+        const power = 50 + Math.random() * 30;
+        const angle = 40 + Math.random() * 15;
+        const spin = -50 + Math.random() * 100;
+        const throwX = (Math.random() - 0.5) * 4;
+
+        setThrownKubbData({
+          power,
+          angle,
+          spin,
+          startPos: [throwX, -1.4, botBackLineZ],
+          targetSide: 'player',
+        });
+        setCurrentKubbThrowIndex(nextIndex);
+      }, 500);
+    }
+  }, [currentKubbThrowIndex, kubbsToThrow.length, fieldKubbs, onFieldKubbsChange, onPhaseChange, onBotBatonsChange]);
 
   // Handle player kubb throw
   const handlePlayerKubbThrow = useCallback((power: number, angle: number, spin: number) => {
@@ -301,11 +346,22 @@ const GameSceneContent = ({
   useEffect(() => {
     if (phase === 'player_turn' && playerBatonsLeft === 0 && !batonInFlight) {
       const timer = setTimeout(() => {
-        const hitCount = botBaselineKubbsDown.size;
+        // Count newly hit bot baseline kubbs this turn
+        const newlyHitBotKubbs = Array.from(botBaselineKubbsDown);
         
-        if (hitCount > 0) {
-          // Player needs to throw kubbs to bot's side (bot throws them)
-          const kubbs: KubbToThrow[] = Array.from(botBaselineKubbsDown).map(id => ({
+        // Also check for downed field kubbs on bot side that need to be cleaned up
+        const downedBotFieldKubbs = fieldKubbs.filter(k => k.side === 'bot' && k.isDown);
+        
+        // Clean up downed field kubbs
+        if (downedBotFieldKubbs.length > 0) {
+          const standingKubbs = fieldKubbs.filter(k => !k.isDown);
+          setFieldKubbs(standingKubbs);
+          onFieldKubbsChange(standingKubbs);
+        }
+        
+        if (newlyHitBotKubbs.length > 0) {
+          // Bot throws knocked baseline kubbs back to player's side
+          const kubbs: KubbToThrow[] = newlyHitBotKubbs.map(id => ({
             id: `kubb-${id}`,
             originalPosition: BOT_BASELINE_POSITIONS[id],
           }));
@@ -319,12 +375,13 @@ const GameSceneContent = ({
           setBotBatonsLeft(BATONS_PER_TURN);
           onPhaseChange('bot_turn');
           onBotBatonsChange(BATONS_PER_TURN);
+          batonRef.current?.setOwner(false);
           batonRef.current?.reset([0, -1.4, botBackLineZ]);
         }
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [phase, playerBatonsLeft, batonInFlight, botBaselineKubbsDown, onPhaseChange, onBotBatonsChange]);
+  }, [phase, playerBatonsLeft, batonInFlight, botBaselineKubbsDown, fieldKubbs, onPhaseChange, onBotBatonsChange, onFieldKubbsChange]);
 
   // Bot controller
   const handleBotThrow = useCallback(() => {
@@ -600,7 +657,7 @@ const GameSceneContent = ({
             angle={thrownKubbData.angle}
             spin={thrownKubbData.spin}
             targetSide={thrownKubbData.targetSide}
-            onLanded={handleKubbLanded}
+            onLanded={phase === 'bot_throw_kubbs' ? handleBotKubbLanded : handleKubbLanded}
           />
         )}
       </Physics>
