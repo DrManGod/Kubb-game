@@ -197,6 +197,11 @@ const GameSceneContent = ({
     onRoundChange(1);
   }, [resetKey]);
 
+  // Debug: Log phase changes
+  useEffect(() => {
+    console.log('🎮 PHASE:', phase, '| Player batons:', playerBatonsLeft, '| Bot batons:', botBatonsLeft, '| Kubbs to throw:', kubbsToThrow.length);
+  }, [phase, playerBatonsLeft, botBatonsLeft, kubbsToThrow.length]);
+
   // Track field kubbs to add after bot throws
   const pendingFieldKubbsRef = useRef<FieldKubbType[]>([]);
 
