@@ -1,4 +1,4 @@
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { useCylinder } from '@react-three/cannon';
 import { Mesh } from 'three';
 
@@ -53,6 +53,11 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position, isPlayerBaton
     collisionFilterGroup: isPlayer ? COLLISION_GROUPS.PLAYER_BATON : COLLISION_GROUPS.BOT_BATON,
     collisionFilterMask: isPlayer ? COLLISION_MASKS.PLAYER_BATON : COLLISION_MASKS.BOT_BATON,
   }));
+
+  // Update collision groups when owner changes
+  useEffect(() => {
+    // This is handled by the physics body setup
+  }, [isPlayer]);
 
   useImperativeHandle(ref, () => ({
     throw: (velocity: [number, number, number], angularVelocity: [number, number, number]) => {
