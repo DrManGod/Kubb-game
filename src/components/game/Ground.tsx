@@ -1,5 +1,6 @@
 import { usePlane, useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
+import { COLLISION_GROUPS } from './Baton';
 
 export const Ground = () => {
   // Kubb field dimensions - 5:8 ratio (5m x 8m scaled)
@@ -10,6 +11,8 @@ export const Ground = () => {
     rotation: [-Math.PI / 2, 0, 0],
     position: [0, -2, -3],
     type: 'Static',
+    collisionFilterGroup: COLLISION_GROUPS.GROUND,
+    collisionFilterMask: -1, // Collide with everything
     material: {
       friction: 0.8,
       restitution: 0.3, // Allow bouncing
