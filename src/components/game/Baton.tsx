@@ -38,21 +38,25 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position, isPlayerBaton
   const [isPlayer, setIsPlayer] = useState(isPlayerBaton);
   
   // Vertical baton for end-over-end throw
-  const [cylinderRef, api] = useCylinder<Mesh>(() => ({
-    mass: isThrown ? 1.5 : 0,
-    position,
-    args: [0.08, 0.08, 1.2, 16],
-    rotation: [Math.PI / 2, 0, 0],
-    linearDamping: 0.1,
-    angularDamping: 0.05,
-    type: 'Dynamic',
-    material: {
-      friction: 0.5,
-      restitution: 0.4,
-    },
-    collisionFilterGroup: isPlayer ? COLLISION_GROUPS.PLAYER_BATON : COLLISION_GROUPS.BOT_BATON,
-    collisionFilterMask: isPlayer ? COLLISION_MASKS.PLAYER_BATON : COLLISION_MASKS.BOT_BATON,
-  }));
+  const [cylinderRef, api] = useCylinder<Mesh>(
+    () => ({
+      mass: isThrown ? 1.5 : 0,
+      position,
+      args: [0.08, 0.08, 1.2, 16],
+      rotation: [Math.PI / 2, 0, 0],
+      linearDamping: 0.1,
+      angularDamping: 0.05,
+      type: 'Dynamic',
+      material: {
+        friction: 0.5,
+        restitution: 0.4,
+      },
+      collisionFilterGroup: isPlayer ? COLLISION_GROUPS.PLAYER_BATON : COLLISION_GROUPS.BOT_BATON,
+      collisionFilterMask: isPlayer ? COLLISION_MASKS.PLAYER_BATON : COLLISION_MASKS.BOT_BATON,
+    }),
+    undefined,
+    [isPlayer]
+  );
 
   // Update collision groups when owner changes
   useEffect(() => {
