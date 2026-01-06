@@ -123,6 +123,12 @@ const GameSceneContent = ({
   const [knockedBotKubbsThisTurn, setKnockedBotKubbsThisTurn] = useState<KubbToThrow[]>([]);
   const [knockedPlayerKubbsThisTurn, setKnockedPlayerKubbsThisTurn] = useState<KubbToThrow[]>([]);
   
+  // Use ref to track current phase for collision callbacks (avoids stale closures)
+  const phaseRef = useRef(phase);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+  
   // Player aiming state
   const [isAiming, setIsAiming] = useState(false);
   const [aimOffset, setAimOffset] = useState(0);
@@ -439,6 +445,9 @@ const GameSceneContent = ({
 
   // Bot also needs to hit player baseline kubbs
   const handlePlayerBaselineHit = useCallback((id: number) => {
+    const currentPhase = phaseRef.current;
+    console.log('🎯 Player baseline kubb hit! ID:', id, 'Phase:', currentPhase);
+    
     setPlayerBaselineKubbsDown(prev => {
       const newSet = new Set(prev);
       if (!newSet.has(id)) {
@@ -447,16 +456,19 @@ const GameSceneContent = ({
         onPlayerBaselineChange(5 - newSet.size);
 
         // Track for return-throw ONLY during bot turn
-        if (phase === 'bot_turn') {
+        if (currentPhase === 'bot_turn') {
+          console.log('📦 Adding player kubb to knockedPlayerKubbsThisTurn');
           setKnockedPlayerKubbsThisTurn(list => {
             const entry: KubbToThrow = { id: `player-baseline-${id}`, originalPosition: PLAYER_BASELINE_POSITIONS[id] };
-            return list.some(k => k.id === entry.id) ? list : [...list, entry];
+            if (list.some(k => k.id === entry.id)) return list;
+            console.log('📦 Knocked player kubbs now:', list.length + 1);
+            return [...list, entry];
           });
         }
       }
       return newSet;
     });
-  }, [onBotScoreChange, onPlayerBaselineChange, phase]);
+  }, [onBotScoreChange, onPlayerBaselineChange]);
 
   useBotController({
     batonRef,
@@ -543,6 +555,9 @@ const GameSceneContent = ({
     // Must clear field kubbs on bot's side first!
     if (mustClearFieldKubbsFirst) return;
 
+    const currentPhase = phaseRef.current;
+    console.log('🎯 Bot baseline kubb hit! ID:', id, 'Phase:', currentPhase);
+
     setBotBaselineKubbsDown(prev => {
       const newSet = new Set(prev);
       if (!newSet.has(id)) {
@@ -551,19 +566,25 @@ const GameSceneContent = ({
         onBotBaselineChange(5 - newSet.size);
 
         // Track for return-throw ONLY during player turn
-        if (phase === 'player_turn') {
+        if (currentPhase === 'player_turn') {
+          console.log('📦 Adding bot kubb to knockedBotKubbsThisTurn');
           setKnockedBotKubbsThisTurn(list => {
             const entry: KubbToThrow = { id: `bot-baseline-${id}`, originalPosition: BOT_BASELINE_POSITIONS[id] };
-            return list.some(k => k.id === entry.id) ? list : [...list, entry];
+            if (list.some(k => k.id === entry.id)) return list;
+            console.log('📦 Knocked kubbs now:', list.length + 1);
+            return [...list, entry];
           });
         }
       }
       return newSet;
     });
-  }, [mustClearFieldKubbsFirst, onPlayerScoreChange, onBotBaselineChange, phase]);
+  }, [mustClearFieldKubbsFirst, onPlayerScoreChange, onBotBaselineChange]);
 
   // Player hits field kubb
   const handleFieldKubbHit = useCallback((id: string) => {
+    const currentPhase = phaseRef.current;
+    console.log('🎯 Field kubb hit! ID:', id, 'Phase:', currentPhase);
+    
     setFieldKubbs(prev => {
       const hit = prev.find(k => k.id === id);
       const updated = prev.map(k => k.id === id ? { ...k, isDown: true } : k);
@@ -571,13 +592,15 @@ const GameSceneContent = ({
 
       // Track knocked field kubb for return-throw based on who is currently throwing batons
       if (hit && !hit.isDown) {
-        if (phase === 'player_turn' && hit.side === 'bot') {
+        if (currentPhase === 'player_turn' && hit.side === 'bot') {
+          console.log('📦 Adding bot field kubb to knockedBotKubbsThisTurn');
           setKnockedBotKubbsThisTurn(list => {
             const entry: KubbToThrow = { id: `bot-field-${id}`, originalPosition: hit.position };
             return list.some(k => k.id === entry.id) ? list : [...list, entry];
           });
         }
-        if (phase === 'bot_turn' && hit.side === 'player') {
+        if (currentPhase === 'bot_turn' && hit.side === 'player') {
+          console.log('📦 Adding player field kubb to knockedPlayerKubbsThisTurn');
           setKnockedPlayerKubbsThisTurn(list => {
             const entry: KubbToThrow = { id: `player-field-${id}`, originalPosition: hit.position };
             return list.some(k => k.id === entry.id) ? list : [...list, entry];
@@ -587,7 +610,7 @@ const GameSceneContent = ({
 
       return updated;
     });
-  }, [onFieldKubbsChange, phase]);
+  }, [onFieldKubbsChange]);
 
   // Check remaining opponent kubbs
   const getOpponentKubbsRemaining = useCallback((currentPlayer: 'player' | 'bot') => {
