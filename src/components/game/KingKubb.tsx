@@ -54,29 +54,58 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
     },
   }));
 
+  const woodColor = hasBeenHit || isHit ? '#8B7355' : '#D4A574';
+  const crownColor = hasBeenHit || isHit ? '#8B7355' : '#C4A35A';
+
   return (
     <group>
+      {/* Main body - taller rectangular kubb shape */}
       <mesh ref={cubeRef} castShadow receiveShadow>
         <boxGeometry args={[0.4, 1.0, 0.4]} />
         <meshStandardMaterial
-          color={hasBeenHit || isHit ? '#555555' : '#FFD700'}
-          roughness={0.2}
-          metalness={0.3}
-          emissive={hasBeenHit || isHit ? '#000000' : '#FFD700'}
-          emissiveIntensity={hasBeenHit || isHit ? 0 : 0.3}
+          color={woodColor}
+          roughness={0.7}
+          metalness={0.05}
         />
       </mesh>
+      
+      {/* Crown base - sits on top of the main body */}
       {!hasBeenHit && !isHit && (
-        <mesh position={[position[0], position[1] + 0.6, position[2]]} castShadow>
-          <cylinderGeometry args={[0.15, 0.2, 0.15, 6]} />
-          <meshStandardMaterial
-            color="#FFD700"
-            roughness={0.2}
-            metalness={0.5}
-            emissive="#FFD700"
-            emissiveIntensity={0.4}
-          />
-        </mesh>
+        <group>
+          {/* Crown platform */}
+          <mesh position={[position[0], position[1] + 0.55, position[2]]} castShadow>
+            <boxGeometry args={[0.5, 0.1, 0.5]} />
+            <meshStandardMaterial
+              color={crownColor}
+              roughness={0.6}
+              metalness={0.1}
+            />
+          </mesh>
+          
+          {/* Crown points - four corners */}
+          <mesh position={[position[0] - 0.18, position[1] + 0.72, position[2] - 0.18]} castShadow>
+            <boxGeometry args={[0.1, 0.24, 0.1]} />
+            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+          </mesh>
+          <mesh position={[position[0] + 0.18, position[1] + 0.72, position[2] - 0.18]} castShadow>
+            <boxGeometry args={[0.1, 0.24, 0.1]} />
+            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+          </mesh>
+          <mesh position={[position[0] - 0.18, position[1] + 0.72, position[2] + 0.18]} castShadow>
+            <boxGeometry args={[0.1, 0.24, 0.1]} />
+            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+          </mesh>
+          <mesh position={[position[0] + 0.18, position[1] + 0.72, position[2] + 0.18]} castShadow>
+            <boxGeometry args={[0.1, 0.24, 0.1]} />
+            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+          </mesh>
+          
+          {/* Center crown point - taller */}
+          <mesh position={[position[0], position[1] + 0.78, position[2]]} castShadow>
+            <boxGeometry args={[0.12, 0.36, 0.12]} />
+            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+          </mesh>
+        </group>
       )}
     </group>
   );
