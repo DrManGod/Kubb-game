@@ -224,8 +224,21 @@ const GameSceneContent = ({
   // Handle bot throwing kubbs back (automatic)
   useEffect(() => {
     if (phase !== 'bot_throw_kubbs') return;
+
+    console.log('🤖 BOT_THROW_KUBBS PHASE ACTIVATED');
+    console.log('📦 Kubbs to throw (state):', kubbsToThrow.length);
+    console.log('📦 Knocked bot kubbs this turn:', knockedBotKubbsThisTurn.length);
+
+    // Fix: phase can switch before kubbsToThrow state is committed (batched updates).
+    // If that happens, seed kubbsToThrow from knockedBotKubbsThisTurn instead of skipping.
+    if (kubbsToThrow.length === 0 && knockedBotKubbsThisTurn.length > 0) {
+      console.log('🧩 Seeding kubbsToThrow from knockedBotKubbsThisTurn');
+      setKubbsToThrow(knockedBotKubbsThisTurn);
+      return;
+    }
+
     if (kubbsToThrow.length === 0) {
-      // Safety: if we ever enter this phase with nothing to throw, continue to bot turn.
+      console.log('⚠️ No kubbs to throw, skipping to bot_turn');
       setPhase('bot_turn');
       onPhaseChange('bot_turn');
       batonRef.current?.setOwner(false);
@@ -236,6 +249,7 @@ const GameSceneContent = ({
     pendingFieldKubbsRef.current = [];
 
     const timer = setTimeout(() => {
+      console.log('🎾 Starting first kubb throw');
       const power = 60 + Math.random() * 20;
       const angle = 42 + Math.random() * 8;
       const spin = -30 + Math.random() * 60;
@@ -252,7 +266,7 @@ const GameSceneContent = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [phase, kubbsToThrow, onPhaseChange]);
+  }, [phase, kubbsToThrow, knockedBotKubbsThisTurn, onPhaseChange]);
 
   // Handle bot kubb landing
   const handleBotKubbLanded = useCallback((finalPosition: [number, number, number]) => {
