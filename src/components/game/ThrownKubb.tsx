@@ -83,9 +83,35 @@ export const ThrownKubb = ({
     });
   }, [power, angle, spin, targetSide, api]);
 
-  // Check if kubb has landed (velocity near zero and Y position stable)
+  // Check if kubb has landed (velocity near zero) OR fell out of bounds
   useFrame(() => {
     if (hasLanded) return;
+
+    const pos = positionRef.current;
+
+    // If the kubb falls through the world or flies way out, treat it as landed.
+    // This prevents the game from getting stuck waiting for a "landing" that never happens.
+    const isOutOfBounds = pos[1] < -5 || Math.abs(pos[0]) > 20 || Math.abs(pos[2]) > 25;
+    if (isOutOfBounds) {
+      setHasLanded(true);
+
+      const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+      const clampedX = clamp(pos[0], -3.5, 3.5);
+      const clampedZ =
+        targetSide === 'player'
+          ? clamp(pos[2], -1.5, 2.5)
+          : clamp(pos[2], -8, -5);
+
+      console.log('🧯 Kubb went out of bounds, clamping landing to:', [clampedX, -1.7, clampedZ]);
+
+      // Stop physics
+      api.rotation.set(0, 0, 0);
+      api.velocity.set(0, 0, 0);
+      api.angularVelocity.set(0, 0, 0);
+
+      onLanded([clampedX, -1.7, clampedZ]);
+      return;
+    }
 
     const velocity = lastVelocityRef.current;
     const speed = velocity.length();
@@ -96,19 +122,19 @@ export const ThrownKubb = ({
         // Wait 500ms to make sure it's really stopped
         landingTimerRef.current = setTimeout(() => {
           if (hasLanded) return;
-          
+
           setHasLanded(true);
-          
-          const pos = positionRef.current;
-          console.log('🎯 Kubb landed at:', pos);
-          
+
+          const landedPos = positionRef.current;
+          console.log('🎯 Kubb landed at:', landedPos);
+
           // Stand kubb upright
           api.rotation.set(0, 0, 0);
           api.velocity.set(0, 0, 0);
           api.angularVelocity.set(0, 0, 0);
-          
+
           // Call landed callback with final position
-          onLanded([pos[0], pos[1], pos[2]]);
+          onLanded([landedPos[0], landedPos[1], landedPos[2]]);
         }, 500);
       }
     } else {
