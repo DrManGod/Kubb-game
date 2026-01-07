@@ -298,11 +298,33 @@ export const GameUI = ({
             ${phaseConfig.bg} ${phaseConfig.glow}
             px-6 py-3 rounded-xl shadow-2xl
             transition-all duration-300
+            ${isBotThrowingKubbs ? 'animate-pulse' : ''}
           `}
         >
           <span className="text-xl font-bold text-white">{phaseConfig.text}</span>
         </div>
       </div>
+
+      {/* Bot Throwing Kubbs Overlay */}
+      {isBotThrowingKubbs && (
+        <div className="absolute top-32 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-red-900/80 backdrop-blur-md rounded-xl px-8 py-4 shadow-2xl border-2 border-red-500/50 animate-fade-in">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-8 h-10 bg-amber-600 rounded-sm animate-bounce" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-ping" />
+              </div>
+              <div className="text-center">
+                <p className="text-white font-bold text-lg">🤖 Boten kastar tillbaka kubbar</p>
+                <p className="text-white/70 text-sm">Nedfallna kubbar kastas till din sida av planen</p>
+              </div>
+              <div className="relative">
+                <div className="w-8 h-10 bg-amber-600 rounded-sm animate-bounce" style={{ animationDelay: '0.2s' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Left Panel - Player */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-auto">
