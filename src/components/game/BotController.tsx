@@ -90,13 +90,13 @@ export const useBotController = ({
     // Calculate throw velocity toward target
     const distance = Math.abs(targetPos[2] - botBaselineZ);
     
-    // Bot has ~70% accuracy
-    const accuracy = 0.7 + Math.random() * 0.2;
-    const power = 0.5 + Math.random() * 0.3;
+    // Bot has ~85% accuracy
+    const accuracy = 0.85 + Math.random() * 0.1;
+    const power = 0.6 + Math.random() * 0.25;
     
-    const velocityZ = 6 + power * 4; // Forward (positive Z toward player)
-    const velocityY = 2.5 + power * 2;
-    const velocityX = (targetPos[0] - throwX) * 0.3 * accuracy + (Math.random() - 0.5) * 0.5;
+    const velocityZ = 7 + power * 4; // Forward (positive Z toward player)
+    const velocityY = 2.8 + power * 2;
+    const velocityX = (targetPos[0] - throwX) * 0.4 * accuracy + (Math.random() - 0.5) * 0.3;
 
     setTimeout(() => {
       if (!batonRef.current) return;

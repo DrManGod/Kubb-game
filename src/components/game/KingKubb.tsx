@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBox } from '@react-three/cannon';
-import { Mesh } from 'three';
+import { Mesh, Group } from 'three';
+import { useFrame } from '@react-three/fiber';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
 
 interface KingKubbProps {
@@ -12,6 +13,7 @@ interface KingKubbProps {
 export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   const [hasBeenHit, setHasBeenHit] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const crownRef = useRef<Group>(null);
   
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 500);
@@ -54,6 +56,14 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
     },
   }));
 
+  // Sync crown group with physics body
+  useFrame(() => {
+    if (cubeRef.current && crownRef.current) {
+      crownRef.current.position.copy(cubeRef.current.position);
+      crownRef.current.quaternion.copy(cubeRef.current.quaternion);
+    }
+  });
+
   const woodColor = hasBeenHit || isHit ? '#8B7355' : '#D4A574';
   const crownColor = hasBeenHit || isHit ? '#8B7355' : '#C4A35A';
 
@@ -69,44 +79,42 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
         />
       </mesh>
       
-      {/* Crown base - sits on top of the main body */}
-      {!hasBeenHit && !isHit && (
-        <group>
-          {/* Crown platform */}
-          <mesh position={[position[0], position[1] + 0.55, position[2]]} castShadow>
-            <boxGeometry args={[0.5, 0.1, 0.5]} />
-            <meshStandardMaterial
-              color={crownColor}
-              roughness={0.6}
-              metalness={0.1}
-            />
-          </mesh>
-          
-          {/* Crown points - four corners */}
-          <mesh position={[position[0] - 0.18, position[1] + 0.72, position[2] - 0.18]} castShadow>
-            <boxGeometry args={[0.1, 0.24, 0.1]} />
-            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-          </mesh>
-          <mesh position={[position[0] + 0.18, position[1] + 0.72, position[2] - 0.18]} castShadow>
-            <boxGeometry args={[0.1, 0.24, 0.1]} />
-            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-          </mesh>
-          <mesh position={[position[0] - 0.18, position[1] + 0.72, position[2] + 0.18]} castShadow>
-            <boxGeometry args={[0.1, 0.24, 0.1]} />
-            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-          </mesh>
-          <mesh position={[position[0] + 0.18, position[1] + 0.72, position[2] + 0.18]} castShadow>
-            <boxGeometry args={[0.1, 0.24, 0.1]} />
-            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-          </mesh>
-          
-          {/* Center crown point - taller */}
-          <mesh position={[position[0], position[1] + 0.78, position[2]]} castShadow>
-            <boxGeometry args={[0.12, 0.36, 0.12]} />
-            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-          </mesh>
-        </group>
-      )}
+      {/* Crown - attached to body via ref sync */}
+      <group ref={crownRef}>
+        {/* Crown platform */}
+        <mesh position={[0, 0.55, 0]} castShadow>
+          <boxGeometry args={[0.5, 0.1, 0.5]} />
+          <meshStandardMaterial
+            color={crownColor}
+            roughness={0.6}
+            metalness={0.1}
+          />
+        </mesh>
+        
+        {/* Crown points - four corners */}
+        <mesh position={[-0.18, 0.72, -0.18]} castShadow>
+          <boxGeometry args={[0.1, 0.24, 0.1]} />
+          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+        </mesh>
+        <mesh position={[0.18, 0.72, -0.18]} castShadow>
+          <boxGeometry args={[0.1, 0.24, 0.1]} />
+          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+        </mesh>
+        <mesh position={[-0.18, 0.72, 0.18]} castShadow>
+          <boxGeometry args={[0.1, 0.24, 0.1]} />
+          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+        </mesh>
+        <mesh position={[0.18, 0.72, 0.18]} castShadow>
+          <boxGeometry args={[0.1, 0.24, 0.1]} />
+          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+        </mesh>
+        
+        {/* Center crown point - taller */}
+        <mesh position={[0, 0.78, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.36, 0.12]} />
+          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+        </mesh>
+      </group>
     </group>
   );
 };

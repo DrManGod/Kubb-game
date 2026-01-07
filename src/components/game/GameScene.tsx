@@ -423,12 +423,15 @@ const GameSceneContent = ({
   }, [onBotBatonsChange]);
 
   const handleBotTurnEnd = useCallback(() => {
+    console.log('🤖 handleBotTurnEnd called, knockedPlayerKubbsThisTurn:', knockedPlayerKubbsThisTurn.length);
+    
     if (knockedPlayerKubbsThisTurn.length > 0) {
       // Player must throw knocked kubbs to bot's side
       const standingKubbs = fieldKubbs.filter(k => !k.isDown);
       setFieldKubbs(standingKubbs);
       onFieldKubbsChange(standingKubbs);
 
+      console.log('➡️ Transitioning to player_throw_kubbs, kubbs:', knockedPlayerKubbsThisTurn.length);
       setKubbsToThrow(knockedPlayerKubbsThisTurn);
       setCurrentKubbThrowIndex(0);
       setPhase('player_throw_kubbs');
