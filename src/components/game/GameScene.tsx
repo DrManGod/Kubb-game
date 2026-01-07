@@ -13,6 +13,7 @@ import { useBotController } from './BotController';
 import { KubbThrowControls } from './KubbThrowControls';
 import { ThrownKubb } from './ThrownKubb';
 import { GamePhase, FieldKubb as FieldKubbType, KubbToThrow } from '@/hooks/useGameState';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 const CUBE_COLORS = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
 
@@ -55,6 +56,7 @@ interface GameSceneContentProps {
   onBotBaselineChange: (count: number) => void;
   onRoundChange: (round: number) => void;
   resetKey: number;
+  sounds: ReturnType<typeof useSoundEffects>;
 }
 
 const PowerMeter = ({ isAiming, power }: { isAiming: boolean; power: number }) => {
@@ -94,6 +96,7 @@ const GameSceneContent = ({
   onBotBaselineChange,
   onRoundChange,
   resetKey,
+  sounds,
 }: GameSceneContentProps) => {
   const batonRef = useRef<BatonRef>(null);
   
@@ -415,12 +418,13 @@ const GameSceneContent = ({
 
   // Bot controller
   const handleBotThrow = useCallback(() => {
+    sounds.playThrowSound();
     setBotBatonsLeft(prev => {
       const newVal = prev - 1;
       onBotBatonsChange(newVal);
       return newVal;
     });
-  }, [onBotBatonsChange]);
+  }, [onBotBatonsChange, sounds]);
 
   const handleBotTurnEnd = useCallback(() => {
     console.log('🤖 handleBotTurnEnd called, knockedPlayerKubbsThisTurn:', knockedPlayerKubbsThisTurn.length);
@@ -471,6 +475,7 @@ const GameSceneContent = ({
         newSet.add(id);
         onBotScoreChange(newSet.size);
         onPlayerBaselineChange(5 - newSet.size);
+        sounds.playHitSound();
 
         // Track for return-throw ONLY during bot turn
         if (currentPhase === 'bot_turn') {
@@ -485,7 +490,7 @@ const GameSceneContent = ({
       }
       return newSet;
     });
-  }, [onBotScoreChange, onPlayerBaselineChange]);
+  }, [onBotScoreChange, onPlayerBaselineChange, sounds]);
 
   useBotController({
     batonRef,
@@ -542,6 +547,7 @@ const GameSceneContent = ({
         [8 + power * 6, aimOffset * 0.5, 0]
       );
       setBatonInFlight(true);
+      sounds.playThrowSound();
 
       const newBatonsLeft = playerBatonsLeft - 1;
       const newTotalThrows = totalThrows + 1;
@@ -565,7 +571,7 @@ const GameSceneContent = ({
     e?.target?.releasePointerCapture?.(e?.pointerId);
     setIsAiming(false);
     setAimOffset(0);
-  }, [isAiming, oscillatingPower, aimOffset, playerBatonsLeft, kingHit, phase, throwerX, totalThrows, onPlayerBatonsChange, onThrowsChange]);
+  }, [isAiming, oscillatingPower, aimOffset, playerBatonsLeft, kingHit, phase, throwerX, totalThrows, onPlayerBatonsChange, onThrowsChange, sounds]);
 
   // Player hits bot baseline kubb
   const handleBotBaselineHit = useCallback((id: number) => {
@@ -581,6 +587,7 @@ const GameSceneContent = ({
         newSet.add(id);
         onPlayerScoreChange(newSet.size);
         onBotBaselineChange(5 - newSet.size);
+        sounds.playHitSound();
 
         // Track for return-throw ONLY during player turn
         if (currentPhase === 'player_turn') {
@@ -595,7 +602,7 @@ const GameSceneContent = ({
       }
       return newSet;
     });
-  }, [mustClearFieldKubbsFirst, onPlayerScoreChange, onBotBaselineChange]);
+  }, [mustClearFieldKubbsFirst, onPlayerScoreChange, onBotBaselineChange, sounds]);
 
   // Player hits field kubb
   const handleFieldKubbHit = useCallback((id: string) => {
@@ -609,6 +616,8 @@ const GameSceneContent = ({
 
       // Track knocked field kubb for return-throw based on who is currently throwing batons
       if (hit && !hit.isDown) {
+        sounds.playHitSound();
+        
         if (currentPhase === 'player_turn' && hit.side === 'bot') {
           console.log('📦 Adding bot field kubb to knockedBotKubbsThisTurn');
           setKnockedBotKubbsThisTurn(list => {
@@ -627,7 +636,7 @@ const GameSceneContent = ({
 
       return updated;
     });
-  }, [onFieldKubbsChange]);
+  }, [onFieldKubbsChange, sounds]);
 
   // Check remaining opponent kubbs
   const getOpponentKubbsRemaining = useCallback((currentPlayer: 'player' | 'bot') => {
@@ -647,6 +656,7 @@ const GameSceneContent = ({
   const handleKingHit = useCallback(() => {
     if (!kingHit) {
       setKingHit(true);
+      sounds.playKingHitSound();
       
       // Determine who knocked the king based on current phase
       const currentPlayer = phase === 'player_turn' || phase === 'player_throw_kubbs' ? 'player' : 'bot';
@@ -657,14 +667,16 @@ const GameSceneContent = ({
         const newPhase = currentPlayer === 'player' ? 'player_lose' : 'player_win';
         setPhase(newPhase);
         onPhaseChange(newPhase);
+        setTimeout(() => currentPlayer === 'player' ? sounds.playDefeatSound() : sounds.playVictorySound(), 500);
       } else {
         // All opponent kubbs were down - current player WINS
         const newPhase = currentPlayer === 'player' ? 'player_win' : 'player_lose';
         setPhase(newPhase);
         onPhaseChange(newPhase);
+        setTimeout(() => currentPlayer === 'player' ? sounds.playVictorySound() : sounds.playDefeatSound(), 500);
       }
     }
-  }, [kingHit, phase, getOpponentKubbsRemaining, onPhaseChange]);
+  }, [kingHit, phase, getOpponentKubbsRemaining, onPhaseChange, sounds]);
 
   return (
     <>
@@ -846,13 +858,15 @@ interface GameSceneProps {
 }
 
 export const GameScene = (props: GameSceneProps) => {
+  const sounds = useSoundEffects();
+  
   return (
     <Canvas
       shadows
       camera={{ position: [0, 4, 12], fov: 50 }}
       style={{ touchAction: 'none' }}
     >
-      <GameSceneContent {...props} />
+      <GameSceneContent {...props} sounds={sounds} />
     </Canvas>
   );
 };
