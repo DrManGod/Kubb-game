@@ -14,6 +14,7 @@ import { KubbThrowControls } from './KubbThrowControls';
 import { ThrownKubb } from './ThrownKubb';
 import { GamePhase, FieldKubb as FieldKubbType, KubbToThrow } from '@/hooks/useGameState';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { Wind } from '@/hooks/useWind';
 
 const CUBE_COLORS = ['#FF6B6B', '#4ECDC4', '#95E67A', '#FFE66D', '#A06CD5'];
 
@@ -57,6 +58,7 @@ interface GameSceneContentProps {
   onRoundChange: (round: number) => void;
   resetKey: number;
   sounds: ReturnType<typeof useSoundEffects>;
+  wind: Wind;
 }
 
 const PowerMeter = ({ isAiming, power }: { isAiming: boolean; power: number }) => {
@@ -97,6 +99,7 @@ const GameSceneContent = ({
   onRoundChange,
   resetKey,
   sounds,
+  wind,
 }: GameSceneContentProps) => {
   const batonRef = useRef<BatonRef>(null);
   
@@ -541,8 +544,12 @@ const GameSceneContent = ({
       const velocityY = 3 + power * 3;
       const velocityX = aimOffset * 0.8;
 
+      // Apply wind to throw velocity
+      const windAdjustedVelocityX = velocityX + wind.velocityX;
+      const windAdjustedVelocityZ = velocityZ + wind.velocityZ;
+
       batonRef.current.throw(
-        [velocityX, velocityY, velocityZ],
+        [windAdjustedVelocityX, velocityY, windAdjustedVelocityZ],
         [8 + power * 6, aimOffset * 0.5, 0]
       );
       setBatonInFlight(true);
@@ -569,7 +576,7 @@ const GameSceneContent = ({
     e?.target?.releasePointerCapture?.(e?.pointerId);
     setIsAiming(false);
     setAimOffset(0);
-  }, [isAiming, oscillatingPower, aimOffset, playerBatonsLeft, kingHit, phase, throwerX, totalThrows, onPlayerBatonsChange, onThrowsChange, sounds]);
+  }, [isAiming, oscillatingPower, aimOffset, playerBatonsLeft, kingHit, phase, throwerX, totalThrows, onPlayerBatonsChange, onThrowsChange, wind]);
 
   // Player hits bot baseline kubb
   const handleBotBaselineHit = useCallback((id: number) => {
@@ -853,6 +860,7 @@ interface GameSceneProps {
   onBotBaselineChange: (count: number) => void;
   onRoundChange: (round: number) => void;
   resetKey: number;
+  wind: Wind;
 }
 
 export const GameScene = (props: GameSceneProps) => {

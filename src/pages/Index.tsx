@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { GameScene } from '@/components/game/GameScene';
 import { GameUI } from '@/components/game/GameUI';
 import { GamePhase, FieldKubb } from '@/hooks/useGameState';
+import { useWind, Wind } from '@/hooks/useWind';
 
 const Index = () => {
   const [phase, setPhase] = useState<GamePhase>('player_turn');
@@ -17,6 +18,7 @@ const Index = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [kingStanding, setKingStanding] = useState(true);
   const [advantageLine, setAdvantageLine] = useState<number | null>(null);
+  const { wind, randomizeWind } = useWind();
 
   const handleReset = useCallback(() => {
     setPhase('player_turn');
@@ -32,7 +34,8 @@ const Index = () => {
     setCurrentRound(1);
     setKingStanding(true);
     setAdvantageLine(null);
-  }, []);
+    randomizeWind();
+  }, [randomizeWind]);
 
   return (
     <div className="relative w-full h-screen game-gradient overflow-hidden">
@@ -62,6 +65,7 @@ const Index = () => {
         onBotBaselineChange={setBaselineKubbsBot}
         onRoundChange={setCurrentRound}
         resetKey={resetKey}
+        wind={wind}
       />
       
       {/* UI Overlay */}
@@ -79,6 +83,7 @@ const Index = () => {
         currentRound={currentRound}
         kingStanding={kingStanding}
         advantageLine={advantageLine}
+        wind={wind}
       />
     </div>
   );

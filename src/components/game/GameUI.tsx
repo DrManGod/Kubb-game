@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { RotateCcw, Target, Trophy, Swords } from 'lucide-react';
 import { GamePhase, FieldKubb } from '@/hooks/useGameState';
+import { Wind } from '@/hooks/useWind';
+import { WindCompass } from './WindCompass';
 
 interface GameUIProps {
   phase: GamePhase;
@@ -16,6 +18,7 @@ interface GameUIProps {
   currentRound: number;
   kingStanding: boolean;
   advantageLine: number | null;
+  wind: Wind;
 }
 
 // Sub-component for Player/Bot panels
@@ -266,6 +269,7 @@ export const GameUI = ({
   currentRound,
   kingStanding,
   advantageLine,
+  wind,
 }: GameUIProps) => {
   const isPlayerTurn = phase === 'player_turn';
   const isBotTurn = phase === 'bot_turn';
@@ -354,8 +358,9 @@ export const GameUI = ({
         />
       </div>
 
-      {/* Top Right - Field Overview */}
-      <div className="absolute top-16 right-4 pointer-events-auto">
+      {/* Top Right - Field Overview & Wind */}
+      <div className="absolute top-16 right-4 pointer-events-auto flex flex-col gap-3">
+        <WindCompass wind={wind} />
         <FieldOverview
           baselineKubbsPlayer={baselineKubbsPlayer}
           baselineKubbsBot={baselineKubbsBot}

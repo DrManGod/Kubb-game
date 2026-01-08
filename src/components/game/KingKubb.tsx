@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { useBox } from '@react-three/cannon';
-import { Mesh, Group } from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useState, useEffect } from 'react';
+import { useCompoundBody } from '@react-three/cannon';
+import { Group } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
 
 interface KingKubbProps {
@@ -13,17 +12,16 @@ interface KingKubbProps {
 export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   const [hasBeenHit, setHasBeenHit] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const crownRef = useRef<Group>(null);
   
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(timer);
   }, []);
   
-  const [cubeRef, api] = useBox<Mesh>(() => ({
+  // Single compound body containing all shapes
+  const [ref, api] = useCompoundBody<Group>(() => ({
     mass: 0.04,
     position,
-    args: [0.4, 1.0, 0.4],
     type: 'Dynamic',
     linearDamping: 0.25,
     angularDamping: 0.35,
@@ -31,9 +29,21 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
       friction: 0.1,
       restitution: 0.01,
     },
-    // King collides with both player and bot batons
     collisionFilterGroup: COLLISION_GROUPS.KING,
     collisionFilterMask: COLLISION_MASKS.KING,
+    shapes: [
+      // Main body
+      { type: 'Box', args: [0.4, 1.0, 0.4], position: [0, 0, 0] },
+      // Crown platform
+      { type: 'Box', args: [0.5, 0.1, 0.5], position: [0, 0.55, 0] },
+      // Crown corners
+      { type: 'Box', args: [0.1, 0.24, 0.1], position: [-0.18, 0.72, -0.18] },
+      { type: 'Box', args: [0.1, 0.24, 0.1], position: [0.18, 0.72, -0.18] },
+      { type: 'Box', args: [0.1, 0.24, 0.1], position: [-0.18, 0.72, 0.18] },
+      { type: 'Box', args: [0.1, 0.24, 0.1], position: [0.18, 0.72, 0.18] },
+      // Center crown point
+      { type: 'Box', args: [0.12, 0.36, 0.12], position: [0, 0.78, 0] },
+    ],
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
         const contactImpact = e.contact?.impactVelocity;
@@ -56,65 +66,46 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
     },
   }));
 
-  // Sync crown group with physics body
-  useFrame(() => {
-    if (cubeRef.current && crownRef.current) {
-      crownRef.current.position.copy(cubeRef.current.position);
-      crownRef.current.quaternion.copy(cubeRef.current.quaternion);
-    }
-  });
-
   const woodColor = hasBeenHit || isHit ? '#8B7355' : '#D4A574';
   const crownColor = hasBeenHit || isHit ? '#8B7355' : '#C4A35A';
 
   return (
-    <group>
-      {/* Main body - taller rectangular kubb shape */}
-      <mesh ref={cubeRef} castShadow receiveShadow>
+    <group ref={ref}>
+      {/* Main body */}
+      <mesh castShadow receiveShadow>
         <boxGeometry args={[0.4, 1.0, 0.4]} />
-        <meshStandardMaterial
-          color={woodColor}
-          roughness={0.7}
-          metalness={0.05}
-        />
+        <meshStandardMaterial color={woodColor} roughness={0.7} metalness={0.05} />
       </mesh>
       
-      {/* Crown - attached to body via ref sync */}
-      <group ref={crownRef}>
-        {/* Crown platform */}
-        <mesh position={[0, 0.55, 0]} castShadow>
-          <boxGeometry args={[0.5, 0.1, 0.5]} />
-          <meshStandardMaterial
-            color={crownColor}
-            roughness={0.6}
-            metalness={0.1}
-          />
-        </mesh>
-        
-        {/* Crown points - four corners */}
-        <mesh position={[-0.18, 0.72, -0.18]} castShadow>
-          <boxGeometry args={[0.1, 0.24, 0.1]} />
-          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-        </mesh>
-        <mesh position={[0.18, 0.72, -0.18]} castShadow>
-          <boxGeometry args={[0.1, 0.24, 0.1]} />
-          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-        </mesh>
-        <mesh position={[-0.18, 0.72, 0.18]} castShadow>
-          <boxGeometry args={[0.1, 0.24, 0.1]} />
-          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-        </mesh>
-        <mesh position={[0.18, 0.72, 0.18]} castShadow>
-          <boxGeometry args={[0.1, 0.24, 0.1]} />
-          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-        </mesh>
-        
-        {/* Center crown point - taller */}
-        <mesh position={[0, 0.78, 0]} castShadow>
-          <boxGeometry args={[0.12, 0.36, 0.12]} />
-          <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-        </mesh>
-      </group>
+      {/* Crown platform */}
+      <mesh position={[0, 0.55, 0]} castShadow>
+        <boxGeometry args={[0.5, 0.1, 0.5]} />
+        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+      </mesh>
+      
+      {/* Crown corners */}
+      <mesh position={[-0.18, 0.72, -0.18]} castShadow>
+        <boxGeometry args={[0.1, 0.24, 0.1]} />
+        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+      </mesh>
+      <mesh position={[0.18, 0.72, -0.18]} castShadow>
+        <boxGeometry args={[0.1, 0.24, 0.1]} />
+        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+      </mesh>
+      <mesh position={[-0.18, 0.72, 0.18]} castShadow>
+        <boxGeometry args={[0.1, 0.24, 0.1]} />
+        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+      </mesh>
+      <mesh position={[0.18, 0.72, 0.18]} castShadow>
+        <boxGeometry args={[0.1, 0.24, 0.1]} />
+        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+      </mesh>
+      
+      {/* Center crown point */}
+      <mesh position={[0, 0.78, 0]} castShadow>
+        <boxGeometry args={[0.12, 0.36, 0.12]} />
+        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+      </mesh>
     </group>
   );
 };
