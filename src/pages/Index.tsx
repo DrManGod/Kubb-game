@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GameScene } from '@/components/game/GameScene';
 import { GameUI } from '@/components/game/GameUI';
 import { GamePhase, FieldKubb } from '@/hooks/useGameState';
-import { useWind, Wind } from '@/hooks/useWind';
+import { useWind } from '@/hooks/useWind';
 
 const Index = () => {
   const [phase, setPhase] = useState<GamePhase>('player_turn');
@@ -18,7 +18,16 @@ const Index = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [kingStanding, setKingStanding] = useState(true);
   const [advantageLine, setAdvantageLine] = useState<number | null>(null);
-  const { wind, randomizeWind } = useWind();
+  const { wind, randomizeWind, shiftWind } = useWind();
+
+  // Shift wind slightly when total throws changes
+  const prevThrowsRef = React.useRef(totalThrows);
+  React.useEffect(() => {
+    if (totalThrows > prevThrowsRef.current) {
+      shiftWind();
+    }
+    prevThrowsRef.current = totalThrows;
+  }, [totalThrows, shiftWind]);
 
   const handleReset = useCallback(() => {
     setPhase('player_turn');
