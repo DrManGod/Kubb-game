@@ -418,13 +418,12 @@ const GameSceneContent = ({
 
   // Bot controller
   const handleBotThrow = useCallback(() => {
-    sounds.playThrowSound();
     setBotBatonsLeft(prev => {
       const newVal = prev - 1;
       onBotBatonsChange(newVal);
       return newVal;
     });
-  }, [onBotBatonsChange, sounds]);
+  }, [onBotBatonsChange]);
 
   const handleBotTurnEnd = useCallback(() => {
     console.log('🤖 handleBotTurnEnd called, knockedPlayerKubbsThisTurn:', knockedPlayerKubbsThisTurn.length);
@@ -547,7 +546,6 @@ const GameSceneContent = ({
         [8 + power * 6, aimOffset * 0.5, 0]
       );
       setBatonInFlight(true);
-      sounds.playThrowSound();
 
       const newBatonsLeft = playerBatonsLeft - 1;
       const newTotalThrows = totalThrows + 1;
