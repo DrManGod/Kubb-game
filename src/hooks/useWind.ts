@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
 export interface Wind {
   // Direction in radians (0 = North, π/2 = East, π = South, 3π/2 = West)
@@ -18,12 +18,29 @@ export const useWind = () => {
     setWind(generateWind());
   }, []);
 
-  // Randomize wind at the start of each round (can be called from game logic)
-  useEffect(() => {
-    // Initial wind is set in useState
+  // Slight shift between throws (+/- 0.1 strength, +/- 1 degree direction)
+  const shiftWind = useCallback(() => {
+    setWind(prev => {
+      const strengthShift = (Math.random() - 0.5) * 0.2; // +/- 0.1
+      const directionShift = (Math.random() - 0.5) * (2 * Math.PI / 180); // +/- 1 degree in radians
+      
+      const newStrength = Math.max(0, Math.min(10, prev.strength + strengthShift));
+      const newDirection = (prev.direction + directionShift + Math.PI * 2) % (Math.PI * 2);
+      
+      const windFactor = newStrength / 10 * 2;
+      const velocityX = Math.sin(newDirection) * windFactor;
+      const velocityZ = -Math.cos(newDirection) * windFactor;
+
+      return {
+        direction: newDirection,
+        strength: newStrength,
+        velocityX,
+        velocityZ,
+      };
+    });
   }, []);
 
-  return { wind, randomizeWind };
+  return { wind, randomizeWind, shiftWind };
 };
 
 function generateWind(): Wind {

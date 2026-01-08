@@ -78,7 +78,9 @@ export const useBotController = ({
       return;
     }
     
-    const throwX = targetPos[0] + (Math.random() - 0.5) * 0.8;
+    // Bot has ~90% accuracy (improved from 85%)
+    const accuracy = 0.90 + Math.random() * 0.08;
+    const throwX = targetPos[0] * accuracy + (Math.random() - 0.5) * 0.5;
     
     // Set baton to bot owner for collision filtering
     batonRef.current.setOwner(false);
@@ -90,13 +92,11 @@ export const useBotController = ({
     // Calculate throw velocity toward target
     const distance = Math.abs(targetPos[2] - botBaselineZ);
     
-    // Bot has ~85% accuracy
-    const accuracy = 0.85 + Math.random() * 0.1;
-    const power = 0.6 + Math.random() * 0.25;
+    const power = 0.65 + Math.random() * 0.2;
     
-    const velocityZ = 7 + power * 4; // Forward (positive Z toward player)
-    const velocityY = 2.8 + power * 2;
-    const velocityX = (targetPos[0] - throwX) * 0.4 * accuracy + (Math.random() - 0.5) * 0.3;
+    const velocityZ = 7.5 + power * 4; // Slightly more forward velocity
+    const velocityY = 2.6 + power * 2;
+    const velocityX = (targetPos[0] - throwX) * 0.5 * accuracy + (Math.random() - 0.5) * 0.2;
 
     setTimeout(() => {
       if (!batonRef.current) return;
