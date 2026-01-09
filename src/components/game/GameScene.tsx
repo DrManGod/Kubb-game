@@ -616,11 +616,21 @@ const GameSceneContent = ({
 
   // Player hits bot baseline kubb
   const handleBotBaselineHit = useCallback((id: number) => {
-    // Must clear field kubbs on bot's side first!
-    if (mustClearFieldKubbsFirst) return;
-
     const currentPhase = phaseRef.current;
     console.log('🎯 Bot baseline kubb hit! ID:', id, 'Phase:', currentPhase);
+
+    // Even if field-kubbs must be cleared (rules), we still want the bot to throw back
+    // any kubb the player physically knocks down.
+    if (mustClearFieldKubbsFirst) {
+      if (currentPhase === 'player_turn') {
+        sounds.playHitSound();
+        setKnockedBotKubbsThisTurn(list => {
+          const entry: KubbToThrow = { id: `bot-baseline-${id}`, originalPosition: BOT_BASELINE_POSITIONS[id] };
+          return list.some(k => k.id === entry.id) ? list : [...list, entry];
+        });
+      }
+      return;
+    }
 
     setBotBaselineKubbsDown(prev => {
       const newSet = new Set(prev);
@@ -632,12 +642,9 @@ const GameSceneContent = ({
 
         // Track for return-throw ONLY during player turn
         if (currentPhase === 'player_turn') {
-          console.log('📦 Adding bot kubb to knockedBotKubbsThisTurn');
           setKnockedBotKubbsThisTurn(list => {
             const entry: KubbToThrow = { id: `bot-baseline-${id}`, originalPosition: BOT_BASELINE_POSITIONS[id] };
-            if (list.some(k => k.id === entry.id)) return list;
-            console.log('📦 Knocked kubbs now:', list.length + 1);
-            return [...list, entry];
+            return list.some(k => k.id === entry.id) ? list : [...list, entry];
           });
         }
       }
