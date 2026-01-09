@@ -5,8 +5,15 @@ export type GamePhase =
   | 'player_throw_kubbs'    // Player throws knocked kubbs to bot's side
   | 'bot_turn'              // Bot throwing batons at field kubbs first, then player baseline kubbs
   | 'bot_throw_kubbs'       // Bot throws knocked kubbs to player's side
+  | 'player_raise_kubbs'    // Player raises landed kubbs (choose top or bottom edge)
   | 'player_win'            // Player knocked all kubbs + king
   | 'player_lose';          // King hit early or bot wins
+
+export interface LandedKubb {
+  id: string;
+  position: [number, number, number];
+  raised: boolean; // Whether the player has raised this kubb
+}
 
 export interface FieldKubb {
   id: string;
