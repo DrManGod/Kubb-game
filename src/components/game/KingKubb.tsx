@@ -36,13 +36,14 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
       { type: 'Box', args: [0.4, 1.0, 0.4], position: [0, 0, 0] },
       // Crown platform
       { type: 'Box', args: [0.5, 0.1, 0.5], position: [0, 0.55, 0] },
-      // Crown corners
-      { type: 'Box', args: [0.1, 0.24, 0.1], position: [-0.18, 0.72, -0.18] },
-      { type: 'Box', args: [0.1, 0.24, 0.1], position: [0.18, 0.72, -0.18] },
-      { type: 'Box', args: [0.1, 0.24, 0.1], position: [-0.18, 0.72, 0.18] },
-      { type: 'Box', args: [0.1, 0.24, 0.1], position: [0.18, 0.72, 0.18] },
-      // Center crown point
-      { type: 'Box', args: [0.12, 0.36, 0.12], position: [0, 0.78, 0] },
+      // 9 crown tip collision boxes (approximating cones)
+      ...[...Array(9)].map((_, i) => {
+        const angle = (2 * Math.PI * i) / 9;
+        const radius = 0.18;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        return { type: 'Box' as const, args: [0.06, 0.2, 0.06] as [number, number, number], position: [x, 0.7, z] as [number, number, number] };
+      }),
     ],
     onCollide: (e) => {
       if (!hasBeenHit && isReady && e.body) {
@@ -83,29 +84,19 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
         <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
       </mesh>
       
-      {/* Crown corners */}
-      <mesh position={[-0.18, 0.72, -0.18]} castShadow>
-        <boxGeometry args={[0.1, 0.24, 0.1]} />
-        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-      </mesh>
-      <mesh position={[0.18, 0.72, -0.18]} castShadow>
-        <boxGeometry args={[0.1, 0.24, 0.1]} />
-        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-      </mesh>
-      <mesh position={[-0.18, 0.72, 0.18]} castShadow>
-        <boxGeometry args={[0.1, 0.24, 0.1]} />
-        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-      </mesh>
-      <mesh position={[0.18, 0.72, 0.18]} castShadow>
-        <boxGeometry args={[0.1, 0.24, 0.1]} />
-        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-      </mesh>
-      
-      {/* Center crown point */}
-      <mesh position={[0, 0.78, 0]} castShadow>
-        <boxGeometry args={[0.12, 0.36, 0.12]} />
-        <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
-      </mesh>
+      {/* 9 triangular crown tips */}
+      {[...Array(9)].map((_, i) => {
+        const angle = (2 * Math.PI * i) / 9;
+        const radius = 0.18;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        return (
+          <mesh key={i} position={[x, 0.7, z]} castShadow>
+            <coneGeometry args={[0.05, 0.2, 4]} />
+            <meshStandardMaterial color={crownColor} roughness={0.6} metalness={0.1} />
+          </mesh>
+        );
+      })}
     </group>
   );
 };
