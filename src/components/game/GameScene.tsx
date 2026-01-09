@@ -11,8 +11,9 @@ import { Ground } from './Ground';
 import { AimTrajectory } from './AimTrajectory';
 import { useBotController } from './BotController';
 import { KubbThrowControls } from './KubbThrowControls';
+import { KubbRaiseUI } from './KubbRaiseUI';
 import { ThrownKubb } from './ThrownKubb';
-import { GamePhase, FieldKubb as FieldKubbType, KubbToThrow } from '@/hooks/useGameState';
+import { GamePhase, FieldKubb as FieldKubbType, KubbToThrow, LandedKubb } from '@/hooks/useGameState';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 import { Wind } from '@/hooks/useWind';
 
@@ -129,6 +130,9 @@ const GameSceneContent = ({
   const [knockedBotKubbsThisTurn, setKnockedBotKubbsThisTurn] = useState<KubbToThrow[]>([]);
   const [knockedPlayerKubbsThisTurn, setKnockedPlayerKubbsThisTurn] = useState<KubbToThrow[]>([]);
   
+  // Landed kubbs waiting to be raised by player
+  const [landedKubbs, setLandedKubbs] = useState<LandedKubb[]>([]);
+  
   // Use ref to track current phase for collision callbacks (avoids stale closures)
   const phaseRef = useRef(phase);
   useEffect(() => {
@@ -199,6 +203,7 @@ const GameSceneContent = ({
     setKubbsToThrow([]);
     setCurrentKubbThrowIndex(0);
     setThrownKubbData(null);
+    setLandedKubbs([]);
     batonRef.current?.reset([0, -1.4, playerBackLineZ]);
     
     onPhaseChange('player_turn');
@@ -274,37 +279,26 @@ const GameSceneContent = ({
     return () => clearTimeout(timer);
   }, [phase, kubbsToThrow, knockedBotKubbsThisTurn, onPhaseChange]);
 
-  // Handle bot kubb landing
+  // Handle bot kubb landing - collect for player to raise
   const handleBotKubbLanded = useCallback((finalPosition: [number, number, number]) => {
-    const newKubb: FieldKubbType = {
-      id: `field-player-${Date.now()}-${currentKubbThrowIndex}`,
+    const kubbId = `field-player-${Date.now()}-${currentKubbThrowIndex}`;
+    
+    // Add to landed kubbs for raising
+    setLandedKubbs(prev => [...prev, {
+      id: kubbId,
       position: finalPosition,
-      isDown: false,
-      side: 'player',
-    };
-
-    pendingFieldKubbsRef.current.push(newKubb);
+      raised: false,
+    }]);
+    
     setThrownKubbData(null);
 
     const nextIndex = currentKubbThrowIndex + 1;
     if (nextIndex >= kubbsToThrow.length) {
-      const updatedFieldKubbs = [...fieldKubbs.filter(k => !k.isDown), ...pendingFieldKubbsRef.current];
-      setFieldKubbs(updatedFieldKubbs);
-      onFieldKubbsChange(updatedFieldKubbs);
-
-      // Done throwing back -> bot turn
+      // All kubbs thrown - transition to raise phase
       setKubbsToThrow([]);
       setCurrentKubbThrowIndex(0);
-      setPhase('bot_turn');
-      onPhaseChange('bot_turn');
-
-      batonRef.current?.setOwner(false);
-      batonRef.current?.reset([0, -1.4, botBackLineZ]);
-
-      setPlayerBatonsLeft(BATONS_PER_TURN);
-      setBotBatonsLeft(BATONS_PER_TURN);
-      onPlayerBatonsChange(BATONS_PER_TURN);
-      onBotBatonsChange(BATONS_PER_TURN);
+      setPhase('player_raise_kubbs');
+      onPhaseChange('player_raise_kubbs');
       return;
     }
 
@@ -324,7 +318,49 @@ const GameSceneContent = ({
         targetSide: 'player',
       });
     }, 1500);
-  }, [currentKubbThrowIndex, kubbsToThrow.length, fieldKubbs, onFieldKubbsChange, onPhaseChange, onPlayerBatonsChange, onBotBatonsChange]);
+  }, [currentKubbThrowIndex, kubbsToThrow.length, onPhaseChange]);
+
+  // Handle player raising a kubb (choosing top or bottom edge)
+  const handleRaiseKubb = useCallback((kubbId: string, edge: 'top' | 'bottom') => {
+    setLandedKubbs(prev => prev.map(k => 
+      k.id === kubbId ? { ...k, raised: true } : k
+    ));
+    
+    // Find the kubb and add it as a field kubb
+    setLandedKubbs(prev => {
+      const kubb = prev.find(k => k.id === kubbId);
+      if (kubb) {
+        const newFieldKubb: FieldKubbType = {
+          id: kubb.id,
+          position: kubb.position,
+          isDown: false,
+          side: 'player',
+        };
+        setFieldKubbs(current => {
+          const updated = [...current.filter(k => !k.isDown), newFieldKubb];
+          onFieldKubbsChange(updated);
+          return updated;
+        });
+      }
+      return prev.map(k => k.id === kubbId ? { ...k, raised: true } : k);
+    });
+  }, [onFieldKubbsChange]);
+
+  // Handle completing the raise phase
+  const handleRaiseComplete = useCallback(() => {
+    console.log('🎯 Raise phase complete, transitioning to bot_turn');
+    setLandedKubbs([]);
+    setPhase('bot_turn');
+    onPhaseChange('bot_turn');
+
+    batonRef.current?.setOwner(false);
+    batonRef.current?.reset([0, -1.4, botBackLineZ]);
+
+    setPlayerBatonsLeft(BATONS_PER_TURN);
+    setBotBatonsLeft(BATONS_PER_TURN);
+    onPlayerBatonsChange(BATONS_PER_TURN);
+    onBotBatonsChange(BATONS_PER_TURN);
+  }, [onPhaseChange, onPlayerBatonsChange, onBotBatonsChange]);
 
   // Handle player kubb throw
   const handlePlayerKubbThrow = useCallback((power: number, angle: number, spin: number) => {
@@ -815,6 +851,15 @@ const GameSceneContent = ({
           </div>
         </Html>
       )}
+
+      {/* Player raise kubbs UI */}
+      <KubbRaiseUI
+        landedKubbs={landedKubbs}
+        currentKubbIndex={0}
+        onRaise={handleRaiseKubb}
+        onComplete={handleRaiseComplete}
+        visible={phase === 'player_raise_kubbs'}
+      />
 
       {/* Player throwing kubbs indicator */}
       {phase === 'player_throw_kubbs' && thrownKubbData && (
