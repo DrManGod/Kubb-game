@@ -38,12 +38,15 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
     collisionFilterGroup: COLLISION_GROUPS.BOT_KUBBS,
     collisionFilterMask: COLLISION_MASKS.BOT_KUBBS,
     onCollide: (e) => {
+      console.log('🔔 Bot baseline kubb collision detected! ID:', id, 'hasBeenHit:', hasBeenHit, 'isReady:', isReady, 'disabled:', disabled, 'hasBody:', !!e.body);
       if (!hasBeenHit && isReady && !disabled && e.body) {
         const contactImpact = e.contact?.impactVelocity;
         const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
         const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
         const velocity = contactImpact ?? bodySpeed;
+        console.log('💥 Collision velocity:', velocity, 'threshold: 0.03');
         if (velocity > 0.03) {
+          console.log('✅ Velocity threshold met, calling onHit for kubb', id);
           setHasBeenHit(true);
           onHit(id);
           api.mass.set(0.03);
@@ -55,6 +58,8 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
             (Math.random() - 0.5) * 1.5,
             -5 + Math.random() * 1
           );
+        } else {
+          console.log('❌ Velocity too low, ignoring collision');
         }
       }
     },

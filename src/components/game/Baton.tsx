@@ -60,11 +60,14 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position, isPlayerBaton
 
   // Update collision groups when owner changes
   useEffect(() => {
-    // This is handled by the physics body setup
-  }, [isPlayer]);
+    console.log('🔄 Updating baton collision groups. Owner:', isPlayer ? 'PLAYER' : 'BOT');
+    api.collisionFilterGroup.set(isPlayer ? COLLISION_GROUPS.PLAYER_BATON : COLLISION_GROUPS.BOT_BATON);
+    api.collisionFilterMask.set(isPlayer ? COLLISION_MASKS.PLAYER_BATON : COLLISION_MASKS.BOT_BATON);
+  }, [isPlayer, api]);
 
   useImperativeHandle(ref, () => ({
     throw: (velocity: [number, number, number], angularVelocity: [number, number, number]) => {
+      console.log('🎯 Baton thrown! Owner:', isPlayer ? 'PLAYER' : 'BOT', 'Group:', isPlayer ? COLLISION_GROUPS.PLAYER_BATON : COLLISION_GROUPS.BOT_BATON, 'Mask:', isPlayer ? COLLISION_MASKS.PLAYER_BATON : COLLISION_MASKS.BOT_BATON);
       setIsThrown(true);
       api.mass.set(1.5);
       api.velocity.set(...velocity);
@@ -79,6 +82,7 @@ export const Baton = forwardRef<BatonRef, BatonProps>(({ position, isPlayerBaton
       api.rotation.set(Math.PI / 2, 0, 0);
     },
     setOwner: (isPlayerOwner: boolean) => {
+      console.log('👤 Baton owner changed to:', isPlayerOwner ? 'PLAYER' : 'BOT');
       setIsPlayer(isPlayerOwner);
     },
   }));
