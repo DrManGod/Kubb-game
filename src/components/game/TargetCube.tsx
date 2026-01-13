@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
@@ -16,12 +16,15 @@ export type { TargetCubeProps };
 
 export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false }: TargetCubeProps) => {
   const [hasBeenHit, setHasBeenHit] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  
+  const isReadyRef = useRef(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 500);
+    const timer = setTimeout(() => {
+      isReadyRef.current = true;
+      console.log('✅ Kubb', id, 'is now ready to be hit');
+    }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [id]);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
     mass: 0.03,
@@ -38,6 +41,7 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
     collisionFilterGroup: COLLISION_GROUPS.BOT_KUBBS,
     collisionFilterMask: COLLISION_MASKS.BOT_KUBBS,
     onCollide: (e) => {
+      const isReady = isReadyRef.current;
       console.log('🔔 Bot baseline kubb collision detected! ID:', id, 'hasBeenHit:', hasBeenHit, 'isReady:', isReady, 'disabled:', disabled, 'hasBody:', !!e.body);
       if (!hasBeenHit && isReady && !disabled && e.body) {
         const contactImpact = e.contact?.impactVelocity;

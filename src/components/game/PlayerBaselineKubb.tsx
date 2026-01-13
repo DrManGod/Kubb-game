@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
@@ -12,10 +12,12 @@ interface PlayerBaselineKubbProps {
 
 export const PlayerBaselineKubb = ({ id, position, onHit, isHit }: PlayerBaselineKubbProps) => {
   const [hasBeenHit, setHasBeenHit] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  
+  const isReadyRef = useRef(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 500);
+    const timer = setTimeout(() => {
+      isReadyRef.current = true;
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
   
@@ -34,6 +36,7 @@ export const PlayerBaselineKubb = ({ id, position, onHit, isHit }: PlayerBaselin
     collisionFilterGroup: COLLISION_GROUPS.PLAYER_KUBBS,
     collisionFilterMask: COLLISION_MASKS.PLAYER_KUBBS,
     onCollide: (e) => {
+      const isReady = isReadyRef.current;
       if (!hasBeenHit && isReady && e.body) {
         const contactImpact = e.contact?.impactVelocity;
         const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;

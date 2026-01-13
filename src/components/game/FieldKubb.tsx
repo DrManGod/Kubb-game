@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
@@ -13,10 +13,12 @@ interface FieldKubbProps {
 
 export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) => {
   const [hasBeenHit, setHasBeenHit] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  
+  const isReadyRef = useRef(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 500);
+    const timer = setTimeout(() => {
+      isReadyRef.current = true;
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
   
@@ -39,6 +41,7 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
     collisionFilterGroup: collisionGroup,
     collisionFilterMask: collisionMask,
     onCollide: (e) => {
+      const isReady = isReadyRef.current;
       if (!hasBeenHit && isReady && e.body) {
         const contactImpact = e.contact?.impactVelocity;
         const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
