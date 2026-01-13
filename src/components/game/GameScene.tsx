@@ -423,6 +423,9 @@ const GameSceneContent = ({
   useEffect(() => {
     if (phase === 'player_turn' && playerBatonsLeft === 0 && !batonInFlight) {
       const timer = setTimeout(() => {
+        console.log('🔍 Player turn ending. Knocked bot kubbs:', knockedBotKubbsThisTurn.length);
+        console.log('🔍 Knocked bot kubbs list:', JSON.stringify(knockedBotKubbsThisTurn));
+
         // Clean up downed field kubbs on bot side
         const downedBotFieldKubbs = fieldKubbs.filter(k => k.side === 'bot' && k.isDown);
         if (downedBotFieldKubbs.length > 0) {
@@ -432,13 +435,13 @@ const GameSceneContent = ({
         }
 
         if (knockedBotKubbsThisTurn.length > 0) {
-          console.log('➡️ Transitioning to bot_throw_kubbs, kubbs:', knockedBotKubbsThisTurn.length);
+          console.log('✅ Transitioning to bot_throw_kubbs, kubbs:', knockedBotKubbsThisTurn.length);
           setKubbsToThrow(knockedBotKubbsThisTurn);
           setCurrentKubbThrowIndex(0);
           setPhase('bot_throw_kubbs');
           onPhaseChange('bot_throw_kubbs');
         } else {
-          console.log('➡️ No kubbs knocked, going to bot_turn');
+          console.log('⚠️ No kubbs knocked, going directly to bot_turn');
           setPhase('bot_turn');
           onPhaseChange('bot_turn');
 
@@ -617,16 +620,19 @@ const GameSceneContent = ({
   // Player hits bot baseline kubb
   const handleBotBaselineHit = useCallback((id: number) => {
     const currentPhase = phaseRef.current;
-    console.log('🎯 Bot baseline kubb hit! ID:', id, 'Phase:', currentPhase);
+    console.log('🎯 Bot baseline kubb hit! ID:', id, 'Phase:', currentPhase, 'mustClearFieldKubbs:', mustClearFieldKubbsFirst);
 
     // Even if field-kubbs must be cleared (rules), we still want the bot to throw back
     // any kubb the player physically knocks down.
     if (mustClearFieldKubbsFirst) {
       if (currentPhase === 'player_turn') {
+        console.log('📦 Field kubbs must be cleared first, but adding to knockedBotKubbsThisTurn');
         sounds.playHitSound();
         setKnockedBotKubbsThisTurn(list => {
           const entry: KubbToThrow = { id: `bot-baseline-${id}`, originalPosition: BOT_BASELINE_POSITIONS[id] };
-          return list.some(k => k.id === entry.id) ? list : [...list, entry];
+          const alreadyExists = list.some(k => k.id === entry.id);
+          console.log('📦 Adding kubb to list. Already exists:', alreadyExists, 'New length:', alreadyExists ? list.length : list.length + 1);
+          return alreadyExists ? list : [...list, entry];
         });
       }
       return;
@@ -642,9 +648,12 @@ const GameSceneContent = ({
 
         // Track for return-throw ONLY during player turn
         if (currentPhase === 'player_turn') {
+          console.log('📦 Adding bot baseline kubb to knockedBotKubbsThisTurn');
           setKnockedBotKubbsThisTurn(list => {
             const entry: KubbToThrow = { id: `bot-baseline-${id}`, originalPosition: BOT_BASELINE_POSITIONS[id] };
-            return list.some(k => k.id === entry.id) ? list : [...list, entry];
+            const alreadyExists = list.some(k => k.id === entry.id);
+            console.log('📦 New length:', alreadyExists ? list.length : list.length + 1);
+            return alreadyExists ? list : [...list, entry];
           });
         }
       }
@@ -757,7 +766,7 @@ const GameSceneContent = ({
             color={CUBE_COLORS[i]}
             onHit={handleBotBaselineHit}
             isHit={botBaselineKubbsDown.has(i)}
-            disabled={mustClearFieldKubbsFirst}
+            disabled={false}
           />
         ))}
         
