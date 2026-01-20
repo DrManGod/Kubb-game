@@ -58,7 +58,7 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
   }, [id]);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: 0.03,
+    mass: 0.1,
     position,
     args: [0.3, 0.6, 0.3],
     type: 'Dynamic',
