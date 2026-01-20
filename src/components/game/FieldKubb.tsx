@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
@@ -15,6 +15,15 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
   const [hasBeenHit, setHasBeenHit] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
+  // Use refs to avoid stale closure in physics callback
+  const hasBeenHitRef = useRef(hasBeenHit);
+  const isReadyRef = useRef(isReady);
+  const onHitRef = useRef(onHit);
+  
+  useEffect(() => { hasBeenHitRef.current = hasBeenHit; }, [hasBeenHit]);
+  useEffect(() => { isReadyRef.current = isReady; }, [isReady]);
+  useEffect(() => { onHitRef.current = onHit; }, [onHit]);
+  
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(timer);
@@ -24,6 +33,30 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
   // Field kubbs on bot's side can only be hit by player batons
   const collisionGroup = side === 'player' ? COLLISION_GROUPS.PLAYER_KUBBS : COLLISION_GROUPS.BOT_KUBBS;
   const collisionMask = side === 'player' ? COLLISION_MASKS.PLAYER_KUBBS : COLLISION_MASKS.BOT_KUBBS;
+  
+  const handleCollision = useCallback((e: any, apiRef: any) => {
+    if (!hasBeenHitRef.current && isReadyRef.current && e.body) {
+      const contactImpact = e.contact?.impactVelocity;
+      const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
+      const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
+      const velocity = contactImpact ?? bodySpeed;
+      if (velocity > 0.03) {
+        console.log('🎯 FieldKubb collision detected! ID:', id, 'side:', side, 'velocity:', velocity);
+        hasBeenHitRef.current = true;
+        setHasBeenHit(true);
+        onHitRef.current(id);
+        apiRef.wakeUp();
+        const impulseX = (Math.random() - 0.5) * 0.6;
+        const impulseZ = side === 'player' ? 1.2 : -1.2; // Fall toward the back
+        apiRef.applyImpulse([impulseX, 0.2, impulseZ], [0, 0.3, 0]);
+        apiRef.angularVelocity.set(
+          (Math.random() - 0.5) * 3,
+          (Math.random() - 0.5) * 1.5,
+          (side === 'player' ? 5 : -5) + Math.random() * 1
+        );
+      }
+    }
+  }, [id, side]);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
     mass: 0.03,
@@ -38,27 +71,7 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
     },
     collisionFilterGroup: collisionGroup,
     collisionFilterMask: collisionMask,
-    onCollide: (e) => {
-      if (!hasBeenHit && isReady && e.body) {
-        const contactImpact = e.contact?.impactVelocity;
-        const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
-        const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
-        const velocity = contactImpact ?? bodySpeed;
-        if (velocity > 0.03) {
-          setHasBeenHit(true);
-          onHit(id);
-          api.wakeUp();
-          const impulseX = (Math.random() - 0.5) * 0.6;
-          const impulseZ = side === 'player' ? 1.2 : -1.2; // Fall toward the back
-          api.applyImpulse([impulseX, 0.2, impulseZ], [0, 0.3, 0]);
-          api.angularVelocity.set(
-            (Math.random() - 0.5) * 3,
-            (Math.random() - 0.5) * 1.5,
-            (side === 'player' ? 5 : -5) + Math.random() * 1
-          );
-        }
-      }
-    },
+    onCollide: (e) => handleCollision(e, api),
   }));
 
   // Color based on side - blue tint for player side (to be hit by bot), brown for bot side (to be hit by player)

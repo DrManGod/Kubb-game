@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBox } from '@react-three/cannon';
 import { Mesh } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
@@ -18,10 +18,44 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
   const [hasBeenHit, setHasBeenHit] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
+  // Use refs to avoid stale closure in physics callback
+  const hasBeenHitRef = useRef(hasBeenHit);
+  const isReadyRef = useRef(isReady);
+  const disabledRef = useRef(disabled);
+  const onHitRef = useRef(onHit);
+  
+  useEffect(() => { hasBeenHitRef.current = hasBeenHit; }, [hasBeenHit]);
+  useEffect(() => { isReadyRef.current = isReady; }, [isReady]);
+  useEffect(() => { disabledRef.current = disabled; }, [disabled]);
+  useEffect(() => { onHitRef.current = onHit; }, [onHit]);
+  
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(timer);
   }, []);
+  
+  const handleCollision = useCallback((e: any, apiRef: any) => {
+    if (!hasBeenHitRef.current && isReadyRef.current && !disabledRef.current && e.body) {
+      const contactImpact = e.contact?.impactVelocity;
+      const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
+      const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
+      const velocity = contactImpact ?? bodySpeed;
+      if (velocity > 0.03) {
+        console.log('🎯 TargetCube collision detected! ID:', id, 'velocity:', velocity);
+        hasBeenHitRef.current = true;
+        setHasBeenHit(true);
+        onHitRef.current(id);
+        apiRef.wakeUp();
+        const impulseX = (Math.random() - 0.5) * 0.6;
+        apiRef.applyImpulse([impulseX, 0.2, -1.2], [0, 0.3, 0]);
+        apiRef.angularVelocity.set(
+          (Math.random() - 0.5) * 3,
+          (Math.random() - 0.5) * 1.5,
+          -5 + Math.random() * 1
+        );
+      }
+    }
+  }, [id]);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
     mass: 0.03,
@@ -37,27 +71,7 @@ export const TargetCube = ({ position, color, id, onHit, isHit, disabled = false
     // Bot baseline kubbs - only collide with player batons
     collisionFilterGroup: COLLISION_GROUPS.BOT_KUBBS,
     collisionFilterMask: COLLISION_MASKS.BOT_KUBBS,
-    onCollide: (e) => {
-      if (!hasBeenHit && isReady && !disabled && e.body) {
-        const contactImpact = e.contact?.impactVelocity;
-        const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
-        const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
-        const velocity = contactImpact ?? bodySpeed;
-        if (velocity > 0.03) {
-          setHasBeenHit(true);
-          onHit(id);
-          api.mass.set(0.03);
-          api.wakeUp();
-          const impulseX = (Math.random() - 0.5) * 0.6;
-          api.applyImpulse([impulseX, 0.2, -1.2], [0, 0.3, 0]);
-          api.angularVelocity.set(
-            (Math.random() - 0.5) * 3,
-            (Math.random() - 0.5) * 1.5,
-            -5 + Math.random() * 1
-          );
-        }
-      }
-    },
+    onCollide: (e) => handleCollision(e, api),
   }));
 
   return (
