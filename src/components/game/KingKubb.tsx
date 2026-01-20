@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCompoundBody } from '@react-three/cannon';
 import { Group } from 'three';
 import { COLLISION_GROUPS, COLLISION_MASKS } from './Baton';
@@ -13,9 +13,41 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   const [hasBeenHit, setHasBeenHit] = useState(false);
   const [isReady, setIsReady] = useState(false);
   
+  // Use refs to avoid stale closure in physics callback
+  const hasBeenHitRef = useRef(hasBeenHit);
+  const isReadyRef = useRef(isReady);
+  const onHitRef = useRef(onHit);
+  
+  useEffect(() => { hasBeenHitRef.current = hasBeenHit; }, [hasBeenHit]);
+  useEffect(() => { isReadyRef.current = isReady; }, [isReady]);
+  useEffect(() => { onHitRef.current = onHit; }, [onHit]);
+  
   useEffect(() => {
     const timer = setTimeout(() => setIsReady(true), 500);
     return () => clearTimeout(timer);
+  }, []);
+  
+  const handleCollision = useCallback((e: any, apiRef: any) => {
+    if (!hasBeenHitRef.current && isReadyRef.current && e.body) {
+      const contactImpact = e.contact?.impactVelocity;
+      const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
+      const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
+      const velocity = contactImpact ?? bodySpeed;
+      if (velocity > 0.03) {
+        console.log('👑 KingKubb collision detected! velocity:', velocity);
+        hasBeenHitRef.current = true;
+        setHasBeenHit(true);
+        onHitRef.current();
+        apiRef.wakeUp();
+        const impulseX = (Math.random() - 0.5) * 0.6;
+        apiRef.applyImpulse([impulseX, 0.2, -1.2], [0, 0.4, 0]);
+        apiRef.angularVelocity.set(
+          (Math.random() - 0.5) * 3,
+          (Math.random() - 0.5) * 1.5,
+          -5 + Math.random() * 1
+        );
+      }
+    }
   }, []);
   
   // Single compound body containing all shapes
@@ -45,26 +77,7 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
         return { type: 'Box' as const, args: [0.06, 0.2, 0.06] as [number, number, number], position: [x, 0.7, z] as [number, number, number] };
       }),
     ],
-    onCollide: (e) => {
-      if (!hasBeenHit && isReady && e.body) {
-        const contactImpact = e.contact?.impactVelocity;
-        const v = (e.body as any)?.velocity as { x: number; y: number; z: number } | undefined;
-        const bodySpeed = v ? Math.hypot(v.x, v.y, v.z) : 0;
-        const velocity = contactImpact ?? bodySpeed;
-        if (velocity > 0.03) {
-          setHasBeenHit(true);
-          onHit();
-          api.wakeUp();
-          const impulseX = (Math.random() - 0.5) * 0.6;
-          api.applyImpulse([impulseX, 0.2, -1.2], [0, 0.4, 0]);
-          api.angularVelocity.set(
-            (Math.random() - 0.5) * 3,
-            (Math.random() - 0.5) * 1.5,
-            -5 + Math.random() * 1
-          );
-        }
-      }
-    },
+    onCollide: (e) => handleCollision(e, api),
   }));
 
   const woodColor = hasBeenHit || isHit ? '#8B7355' : '#D4A574';
