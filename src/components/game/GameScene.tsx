@@ -619,25 +619,17 @@ const GameSceneContent = ({
     const currentPhase = phaseRef.current;
     console.log('🎯 Bot baseline kubb hit! ID:', id, 'Phase:', currentPhase);
 
-    // Even if field-kubbs must be cleared (rules), we still want the bot to throw back
-    // any kubb the player physically knocks down.
-    if (mustClearFieldKubbsFirst) {
-      if (currentPhase === 'player_turn') {
-        sounds.playHitSound();
-        setKnockedBotKubbsThisTurn(list => {
-          const entry: KubbToThrow = { id: `bot-baseline-${id}`, originalPosition: BOT_BASELINE_POSITIONS[id] };
-          return list.some(k => k.id === entry.id) ? list : [...list, entry];
-        });
-      }
-      return;
-    }
-
     setBotBaselineKubbsDown(prev => {
       const newSet = new Set(prev);
       if (!newSet.has(id)) {
         newSet.add(id);
-        onPlayerScoreChange(newSet.size);
-        onBotBaselineChange(5 - newSet.size);
+        
+        // Only count score if field kubbs are cleared (rules)
+        if (!mustClearFieldKubbsFirst) {
+          onPlayerScoreChange(newSet.size);
+          onBotBaselineChange(5 - newSet.size);
+        }
+        
         sounds.playHitSound();
 
         // Track for return-throw ONLY during player turn
