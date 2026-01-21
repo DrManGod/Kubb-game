@@ -59,7 +59,7 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
   }, [id, side]);
   
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: 0.1,
+    mass: 0.2,
     position,
     args: [0.3, 0.6, 0.3],
     type: 'Dynamic',
