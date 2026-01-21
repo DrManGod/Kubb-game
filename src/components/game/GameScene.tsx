@@ -147,7 +147,7 @@ const GameSceneContent = ({
   const [batonInFlight, setBatonInFlight] = useState(false);
   const oscillationRef = useRef(0);
 
-  const batonStartPos: [number, number, number] = [throwerX, -1.4, playerBackLineZ];
+  const batonStartPos: [number, number, number] = [throwerX, 1.0, playerBackLineZ];
 
   // Check if player has field kubbs on their side (must clear before bot baseline)
   const playerSideFieldKubbs = fieldKubbs.filter(k => k.side === 'player' && !k.isDown);
@@ -204,7 +204,7 @@ const GameSceneContent = ({
     setCurrentKubbThrowIndex(0);
     setThrownKubbData(null);
     setLandedKubbs([]);
-    batonRef.current?.reset([0, -1.4, playerBackLineZ]);
+    batonRef.current?.reset([0, 1.0, playerBackLineZ]);
     
     onPhaseChange('player_turn');
     onPlayerScoreChange(0);
@@ -354,7 +354,7 @@ const GameSceneContent = ({
     onPhaseChange('bot_turn');
 
     batonRef.current?.setOwner(false);
-    batonRef.current?.reset([0, -1.4, botBackLineZ]);
+    batonRef.current?.reset([0, 1.0, botBackLineZ]);
 
     setPlayerBatonsLeft(BATONS_PER_TURN);
     setBotBatonsLeft(BATONS_PER_TURN);
@@ -443,7 +443,7 @@ const GameSceneContent = ({
           onPhaseChange('bot_turn');
 
           batonRef.current?.setOwner(false);
-          batonRef.current?.reset([0, -1.4, botBackLineZ]);
+          batonRef.current?.reset([0, 1.0, botBackLineZ]);
 
           setPlayerBatonsLeft(BATONS_PER_TURN);
           setBotBatonsLeft(BATONS_PER_TURN);
@@ -549,7 +549,7 @@ const GameSceneContent = ({
     const worldX = typeof e.point?.x === 'number' ? e.point.x : 0;
     const clampedX = Math.max(-3, Math.min(3, worldX));
     setThrowerX(clampedX);
-    batonRef.current?.reset([clampedX, -1.4, playerBackLineZ]);
+    batonRef.current?.reset([clampedX, 1.0, playerBackLineZ]);
     setIsAiming(true);
   }, [phase, playerBatonsLeft, kingHit]);
 
@@ -561,7 +561,7 @@ const GameSceneContent = ({
 
     if (!batonInFlight && !isAiming) {
       setThrowerX(nextThrowerX);
-      batonRef.current?.reset([nextThrowerX, -1.4, playerBackLineZ]);
+      batonRef.current?.reset([nextThrowerX, 1.0, playerBackLineZ]);
     }
 
     if (isAiming) {
