@@ -740,28 +740,32 @@ const GameSceneContent = ({
         
         <Baton ref={batonRef} position={batonStartPos} />
         
-        {/* Bot baseline kubbs (player throws at these) */}
+        {/* Bot baseline kubbs (player throws at these) - don't render if knocked down */}
         {BOT_BASELINE_POSITIONS.map((pos, i) => (
-          <TargetCube
-            key={`${resetKey}-bot-baseline-${i}`}
-            id={i}
-            position={pos}
-            color={CUBE_COLORS[i]}
-            onHit={handleBotBaselineHit}
-            isHit={botBaselineKubbsDown.has(i)}
-            disabled={mustClearFieldKubbsFirst}
-          />
+          !botBaselineKubbsDown.has(i) && (
+            <TargetCube
+              key={`${resetKey}-bot-baseline-${i}`}
+              id={i}
+              position={pos}
+              color={CUBE_COLORS[i]}
+              onHit={handleBotBaselineHit}
+              isHit={false}
+              disabled={mustClearFieldKubbsFirst}
+            />
+          )
         ))}
         
-        {/* Player baseline kubbs (bot throws at these) */}
+        {/* Player baseline kubbs (bot throws at these) - don't render if knocked down */}
         {PLAYER_BASELINE_POSITIONS.map((pos, i) => (
-          <PlayerBaselineKubb
-            key={`${resetKey}-player-baseline-${i}`}
-            id={i}
-            position={pos}
-            onHit={handlePlayerBaselineHit}
-            isHit={playerBaselineKubbsDown.has(i)}
-          />
+          !playerBaselineKubbsDown.has(i) && (
+            <PlayerBaselineKubb
+              key={`${resetKey}-player-baseline-${i}`}
+              id={i}
+              position={pos}
+              onHit={handlePlayerBaselineHit}
+              isHit={false}
+            />
+          )
         ))}
         
         {/* Field kubbs on both sides */}
