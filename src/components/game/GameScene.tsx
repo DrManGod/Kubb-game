@@ -740,33 +740,42 @@ const GameSceneContent = ({
         
         <Baton ref={batonRef} position={batonStartPos} />
         
-        {/* Bot baseline kubbs (player throws at these) - don't render if knocked down */}
-        {BOT_BASELINE_POSITIONS.map((pos, i) => (
-          !botBaselineKubbsDown.has(i) && (
+        {/* Bot baseline kubbs (player throws at these) - hide only during/after throw-back */}
+        {BOT_BASELINE_POSITIONS.map((pos, i) => {
+          // Show kubb if: not hit, OR hit but not yet in throw-back phase
+          const isDown = botBaselineKubbsDown.has(i);
+          const hideForThrowBack = isDown && (phase === 'bot_throw_kubbs' || phase === 'player_raise_kubbs' || phase === 'bot_turn');
+          if (hideForThrowBack) return null;
+          
+          return (
             <TargetCube
               key={`${resetKey}-bot-baseline-${i}`}
               id={i}
               position={pos}
               color={CUBE_COLORS[i]}
               onHit={handleBotBaselineHit}
-              isHit={false}
+              isHit={isDown}
               disabled={mustClearFieldKubbsFirst}
             />
-          )
-        ))}
+          );
+        })}
         
-        {/* Player baseline kubbs (bot throws at these) - don't render if knocked down */}
-        {PLAYER_BASELINE_POSITIONS.map((pos, i) => (
-          !playerBaselineKubbsDown.has(i) && (
+        {/* Player baseline kubbs (bot throws at these) - hide only during/after throw-back */}
+        {PLAYER_BASELINE_POSITIONS.map((pos, i) => {
+          const isDown = playerBaselineKubbsDown.has(i);
+          const hideForThrowBack = isDown && (phase === 'player_throw_kubbs' || phase === 'player_turn');
+          if (hideForThrowBack) return null;
+          
+          return (
             <PlayerBaselineKubb
               key={`${resetKey}-player-baseline-${i}`}
               id={i}
               position={pos}
               onHit={handlePlayerBaselineHit}
-              isHit={false}
+              isHit={isDown}
             />
-          )
-        ))}
+          );
+        })}
         
         {/* Field kubbs on both sides */}
         {fieldKubbs.map((kubb) => (

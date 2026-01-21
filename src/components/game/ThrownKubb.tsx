@@ -55,7 +55,8 @@ export const ThrownKubb = ({
 
   // Throw the kubb on mount
   useEffect(() => {
-    const direction = targetSide === 'player' ? -1 : 1; // player side is negative Z
+    // Bot throws toward player (positive Z), player throws toward bot (negative Z)
+    const direction = targetSide === 'player' ? 1 : -1;
     const angleRad = (angle * Math.PI) / 180;
     
     // Calculate velocity (higher arc than batons)
@@ -79,7 +80,8 @@ export const ThrownKubb = ({
     console.log('🎾 Kubb thrown:', { 
       velocity: [velocityX, velocityY, velocityZ], 
       spin,
-      targetSide 
+      targetSide,
+      direction
     });
   }, [power, angle, spin, targetSide, api]);
 
