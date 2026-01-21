@@ -52,7 +52,7 @@ export const KingKubb = ({ position, onHit, isHit }: KingKubbProps) => {
   
   // Single compound body containing all shapes
   const [ref, api] = useCompoundBody<Group>(() => ({
-    mass: 0.15,
+    mass: 0.25,
     position,
     type: 'Dynamic',
     linearDamping: 0.25,
