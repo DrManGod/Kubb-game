@@ -26,15 +26,17 @@ export const ThrownKubb = ({
   const lastVelocityRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 10, 0));
   const positionRef = useRef<[number, number, number]>(startPosition);
 
-  // Create physics body for kubb
+  // Create physics body for kubb - same dimensions as FieldKubb [0.3, 0.6, 0.3]
   const [ref, api] = useBox<Mesh>(() => ({
-    mass: 1.5,
+    mass: 0.2, // Same mass as FieldKubb
     position: startPosition,
-    args: [0.5, 1.5, 0.5],
+    args: [0.3, 0.6, 0.3], // Same size as FieldKubb
     material: {
-      friction: 0.8,
-      restitution: 0.3,
+      friction: 0.1,
+      restitution: 0.01,
     },
+    linearDamping: 0.25,
+    angularDamping: 0.35,
   }));
 
   // Subscribe to velocity to detect when kubb stops
@@ -99,19 +101,21 @@ export const ThrownKubb = ({
 
       const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
       const clampedX = clamp(pos[0], -3.5, 3.5);
+      // Player's half is from centerline (Z=-3) to player baseline (Z=4)
+      // Bot's half is from centerline (Z=-3) to bot baseline (Z=-10)
       const clampedZ =
         targetSide === 'player'
-          ? clamp(pos[2], -1.5, 2.5)
-          : clamp(pos[2], -8, -5);
+          ? clamp(pos[2], -2.5, 3.5) // Player's half (between centerline and baseline)
+          : clamp(pos[2], -9, -3.5); // Bot's half
 
-      console.log('🧯 Kubb went out of bounds, clamping landing to:', [clampedX, -1.7, clampedZ]);
+      console.log('🧯 Kubb went out of bounds, clamping landing to:', [clampedX, 0.3, clampedZ]);
 
       // Stop physics
       api.rotation.set(0, 0, 0);
       api.velocity.set(0, 0, 0);
       api.angularVelocity.set(0, 0, 0);
 
-      onLanded([clampedX, -1.7, clampedZ]);
+      onLanded([clampedX, 0.3, clampedZ]);
       return;
     }
 
@@ -159,9 +163,9 @@ export const ThrownKubb = ({
 
   return (
     <mesh ref={ref} castShadow receiveShadow>
-      <boxGeometry args={[0.5, 1.5, 0.5]} />
+      <boxGeometry args={[0.3, 0.6, 0.3]} />
       <meshStandardMaterial 
-        color={targetSide === 'player' ? '#FF6B6B' : '#4ECDC4'} 
+        color={targetSide === 'player' ? '#6B4423' : '#8B6914'} // Match FieldKubb colors
         transparent
         opacity={hasLanded ? 0 : 1}
       />
