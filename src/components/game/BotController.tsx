@@ -25,7 +25,7 @@ export const useBotController = ({
   const isThrowingRef = useRef(false);
 
   // Baton spawn/reset height (kept above kubbs to prevent accidental pre-throw collisions)
-  const BATON_READY_Y = 0.8;
+  const BATON_READY_Y = 0.5;
 
   // Bot throws from its baseline (Z = -9.4) toward player's side
   const botBaselineZ = -9.4;
