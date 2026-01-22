@@ -46,7 +46,7 @@ const PLAYER_BASELINE_POSITIONS: [number, number, number][] = [
 const KING_POSITION: [number, number, number] = [0, -1.5, -3];
 const BATONS_PER_TURN = 6;
 // Baton spawn/reset height (kept above kubbs to prevent accidental pre-throw collisions)
-const BATON_READY_Y = 0.8;
+const BATON_READY_Y = 0.5;
 
 interface GameSceneContentProps {
   onPhaseChange: (phase: GamePhase) => void;
