@@ -45,6 +45,8 @@ const PLAYER_BASELINE_POSITIONS: [number, number, number][] = [
 
 const KING_POSITION: [number, number, number] = [0, -1.5, -3];
 const BATONS_PER_TURN = 6;
+// Baton spawn/reset height (kept above kubbs to prevent accidental pre-throw collisions)
+const BATON_READY_Y = 0.8;
 
 interface GameSceneContentProps {
   onPhaseChange: (phase: GamePhase) => void;
@@ -147,7 +149,7 @@ const GameSceneContent = ({
   const [batonInFlight, setBatonInFlight] = useState(false);
   const oscillationRef = useRef(0);
 
-  const batonStartPos: [number, number, number] = [throwerX, 0.1, playerBackLineZ];
+  const batonStartPos: [number, number, number] = [throwerX, BATON_READY_Y, playerBackLineZ];
 
   // Check if player has field kubbs on their side (must clear before bot baseline)
   const playerSideFieldKubbs = fieldKubbs.filter(k => k.side === 'player' && !k.isDown);
@@ -204,7 +206,7 @@ const GameSceneContent = ({
     setCurrentKubbThrowIndex(0);
     setThrownKubbData(null);
     setLandedKubbs([]);
-    batonRef.current?.reset([0, 0.1, playerBackLineZ]);
+    batonRef.current?.reset([0, BATON_READY_Y, playerBackLineZ]);
     
     onPhaseChange('player_turn');
     onPlayerScoreChange(0);
@@ -253,7 +255,7 @@ const GameSceneContent = ({
       setPhase('bot_turn');
       onPhaseChange('bot_turn');
       batonRef.current?.setOwner(false);
-      batonRef.current?.reset([0, 0.1, botBackLineZ]);
+      batonRef.current?.reset([0, BATON_READY_Y, botBackLineZ]);
       return;
     }
 
@@ -354,7 +356,7 @@ const GameSceneContent = ({
     onPhaseChange('bot_turn');
 
     batonRef.current?.setOwner(false);
-    batonRef.current?.reset([0, 0.1, botBackLineZ]);
+    batonRef.current?.reset([0, BATON_READY_Y, botBackLineZ]);
 
     setPlayerBatonsLeft(BATONS_PER_TURN);
     setBotBatonsLeft(BATONS_PER_TURN);
@@ -413,7 +415,7 @@ const GameSceneContent = ({
       onBotBatonsChange(BATONS_PER_TURN);
 
       batonRef.current?.setOwner(true);
-       batonRef.current?.reset([0, 0.1, playerBackLineZ]);
+       batonRef.current?.reset([0, BATON_READY_Y, playerBackLineZ]);
     } else {
       setCurrentKubbThrowIndex(nextIndex);
     }
@@ -443,7 +445,7 @@ const GameSceneContent = ({
           onPhaseChange('bot_turn');
 
           batonRef.current?.setOwner(false);
-          batonRef.current?.reset([0, 0.1, botBackLineZ]);
+          batonRef.current?.reset([0, BATON_READY_Y, botBackLineZ]);
 
           setPlayerBatonsLeft(BATONS_PER_TURN);
           setBotBatonsLeft(BATONS_PER_TURN);
@@ -499,7 +501,7 @@ const GameSceneContent = ({
     onBotBatonsChange(BATONS_PER_TURN);
 
     batonRef.current?.setOwner(true);
-    batonRef.current?.reset([0, 0.1, playerBackLineZ]);
+    batonRef.current?.reset([0, BATON_READY_Y, playerBackLineZ]);
   }, [knockedPlayerKubbsThisTurn, fieldKubbs, currentRound, onFieldKubbsChange, onPhaseChange, onPlayerBatonsChange, onBotBatonsChange, onRoundChange]);
 
   // Bot also needs to hit player baseline kubbs
@@ -549,7 +551,7 @@ const GameSceneContent = ({
     const worldX = typeof e.point?.x === 'number' ? e.point.x : 0;
     const clampedX = Math.max(-3, Math.min(3, worldX));
     setThrowerX(clampedX);
-    batonRef.current?.reset([clampedX, 0.1, playerBackLineZ]);
+    batonRef.current?.reset([clampedX, BATON_READY_Y, playerBackLineZ]);
     setIsAiming(true);
   }, [phase, playerBatonsLeft, kingHit]);
 
@@ -561,7 +563,7 @@ const GameSceneContent = ({
 
     if (!batonInFlight && !isAiming) {
       setThrowerX(nextThrowerX);
-      batonRef.current?.reset([nextThrowerX, 0.1, playerBackLineZ]);
+      batonRef.current?.reset([nextThrowerX, BATON_READY_Y, playerBackLineZ]);
     }
 
     if (isAiming) {
@@ -601,7 +603,7 @@ const GameSceneContent = ({
 
       setTimeout(() => {
         if (newBatonsLeft > 0) {
-          batonRef.current?.reset([currentThrowerX, 0.1, playerBackLineZ]);
+          batonRef.current?.reset([currentThrowerX, BATON_READY_Y, playerBackLineZ]);
           setBatonInFlight(false);
         } else {
           setBatonInFlight(false);
