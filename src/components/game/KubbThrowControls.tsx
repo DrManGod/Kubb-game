@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Html } from '@react-three/drei';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ interface KubbThrowControlsProps {
   kubbsRemaining: number;
   currentKubbIndex: number;
   onThrow: (power: number, angle: number, spin: number) => void;
+  onAimChange?: (power: number, angle: number, spin: number) => void;
   visible: boolean;
 }
 
@@ -15,11 +16,19 @@ export const KubbThrowControls = ({
   kubbsRemaining,
   currentKubbIndex,
   onThrow,
+  onAimChange,
   visible,
 }: KubbThrowControlsProps) => {
   const [power, setPower] = useState(70);
   const [angle, setAngle] = useState(45);
   const [spin, setSpin] = useState(0);
+
+  // Notify parent of aim changes for trajectory preview
+  useEffect(() => {
+    if (visible && onAimChange) {
+      onAimChange(power, angle, spin);
+    }
+  }, [power, angle, spin, visible, onAimChange]);
 
   const handleThrow = useCallback(() => {
     onThrow(power, angle, spin);
