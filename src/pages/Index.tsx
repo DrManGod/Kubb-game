@@ -19,7 +19,7 @@ const Index = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [kingStanding, setKingStanding] = useState(true);
   const [advantageLine, setAdvantageLine] = useState<number | null>(null);
-  const [batonReadyY, setBatonReadyY] = useState(0.5);
+  const [batonReadyY, setBatonReadyY] = useState(-0.3);
   const { wind, randomizeWind, shiftWind } = useWind();
 
   // Shift wind slightly when total throws changes
