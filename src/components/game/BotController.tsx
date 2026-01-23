@@ -10,6 +10,7 @@ interface BotControllerProps {
   playerBaselineKubbsDown: Set<number>;
   onThrow: () => void;
   onTurnEnd: () => void;
+  batonReadyY: number;
 }
 
 export const useBotController = ({
@@ -20,12 +21,10 @@ export const useBotController = ({
   playerBaselineKubbsDown,
   onThrow,
   onTurnEnd,
+  batonReadyY,
 }: BotControllerProps) => {
   const throwTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isThrowingRef = useRef(false);
-
-  // Baton spawn/reset height (kept above kubbs to prevent accidental pre-throw collisions)
-  const BATON_READY_Y = 0.5;
 
   // Bot throws from its baseline (Z = -9.4) toward player's side
   const botBaselineZ = -9.4;
@@ -89,7 +88,7 @@ export const useBotController = ({
     batonRef.current.setOwner(false);
     
     // Reset baton to bot's position
-    batonRef.current.reset([throwX, BATON_READY_Y, botBaselineZ]);
+    batonRef.current.reset([throwX, batonReadyY, botBaselineZ]);
     isThrowingRef.current = true;
 
     // Calculate throw velocity toward target
