@@ -12,6 +12,7 @@ import { AimTrajectory } from './AimTrajectory';
 import { useBotController } from './BotController';
 import { KubbThrowControls } from './KubbThrowControls';
 import { KubbRaiseUI } from './KubbRaiseUI';
+import { KubbAimTrajectory } from './KubbAimTrajectory';
 import { ThrownKubb } from './ThrownKubb';
 import { GamePhase, FieldKubb as FieldKubbType, KubbToThrow, LandedKubb } from '@/hooks/useGameState';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
@@ -134,6 +135,11 @@ const GameSceneContent = ({
   
   // Landed kubbs waiting to be raised by player
   const [landedKubbs, setLandedKubbs] = useState<LandedKubb[]>([]);
+  
+  // Kubb aim state for trajectory preview
+  const [kubbAimPower, setKubbAimPower] = useState(70);
+  const [kubbAimAngle, setKubbAimAngle] = useState(45);
+  const [kubbAimSpin, setKubbAimSpin] = useState(0);
   
   // Use ref to track current phase for collision callbacks (avoids stale closures)
   const phaseRef = useRef(phase);
@@ -363,6 +369,13 @@ const GameSceneContent = ({
     onPlayerBatonsChange(BATONS_PER_TURN);
     onBotBatonsChange(BATONS_PER_TURN);
   }, [onPhaseChange, onPlayerBatonsChange, onBotBatonsChange]);
+
+  // Handle player kubb aim changes (for trajectory preview)
+  const handleKubbAimChange = useCallback((power: number, angle: number, spin: number) => {
+    setKubbAimPower(power);
+    setKubbAimAngle(angle);
+    setKubbAimSpin(spin);
+  }, []);
 
   // Handle player kubb throw
   const handlePlayerKubbThrow = useCallback((power: number, angle: number, spin: number) => {
@@ -824,11 +837,22 @@ const GameSceneContent = ({
         </>
       )}
 
-      {/* Kubb throwing controls */}
+      {/* Kubb throwing controls with trajectory */}
+      {phase === 'player_throw_kubbs' && !thrownKubbData && (
+        <KubbAimTrajectory
+          startPosition={[0, -1.4, playerBackLineZ]}
+          power={kubbAimPower}
+          angle={kubbAimAngle}
+          spin={kubbAimSpin}
+          targetSide="bot"
+          visible={true}
+        />
+      )}
       <KubbThrowControls
         kubbsRemaining={kubbsToThrow.length}
         currentKubbIndex={currentKubbThrowIndex}
         onThrow={handlePlayerKubbThrow}
+        onAimChange={handleKubbAimChange}
         visible={phase === 'player_throw_kubbs' && !thrownKubbData}
       />
       
