@@ -141,6 +141,12 @@ const GameSceneContent = ({
   const [kubbAimAngle, setKubbAimAngle] = useState(45);
   const [kubbAimSpin, setKubbAimSpin] = useState(0);
   
+  // Kubb throw mouse aiming state
+  const [isKubbAiming, setIsKubbAiming] = useState(false);
+  const [kubbAimX, setKubbAimX] = useState(0);
+  const [kubbOscillatingPower, setKubbOscillatingPower] = useState(0);
+  const kubbOscillationRef = useRef(0);
+  
   // Use ref to track current phase for collision callbacks (avoids stale closures)
   const phaseRef = useRef(phase);
   useEffect(() => {
@@ -162,11 +168,15 @@ const GameSceneContent = ({
   const botSideFieldKubbs = fieldKubbs.filter(k => k.side === 'bot' && !k.isDown);
   const mustClearFieldKubbsFirst = botSideFieldKubbs.length > 0;
 
-  // Oscillate power while aiming
+  // Oscillate power while aiming (baton or kubb)
   useFrame((state) => {
     if (isAiming && phase === 'player_turn') {
       oscillationRef.current = (Math.sin(state.clock.elapsedTime * 2.5) + 1) / 2;
       setOscillatingPower(0.1 + oscillationRef.current * 0.9);
+    }
+    if (isKubbAiming && phase === 'player_throw_kubbs') {
+      kubbOscillationRef.current = (Math.sin(state.clock.elapsedTime * 2.5) + 1) / 2;
+      setKubbOscillatingPower(30 + kubbOscillationRef.current * 70);
     }
   });
 
@@ -370,14 +380,21 @@ const GameSceneContent = ({
     onBotBatonsChange(BATONS_PER_TURN);
   }, [onPhaseChange, onPlayerBatonsChange, onBotBatonsChange]);
 
-  // Handle player kubb aim changes (for trajectory preview)
+  // Handle player kubb aim changes (for trajectory preview) - only angle and spin from sliders
   const handleKubbAimChange = useCallback((power: number, angle: number, spin: number) => {
-    setKubbAimPower(power);
+    // Power comes from oscillating meter, but angle/spin from sliders
     setKubbAimAngle(angle);
     setKubbAimSpin(spin);
   }, []);
+  
+  // Keep trajectory preview updated with oscillating power
+  useEffect(() => {
+    if (phase === 'player_throw_kubbs' && isKubbAiming) {
+      setKubbAimPower(kubbOscillatingPower);
+    }
+  }, [phase, isKubbAiming, kubbOscillatingPower]);
 
-  // Handle player kubb throw
+  // Handle player kubb throw - now triggered by mouse release
   const handlePlayerKubbThrow = useCallback((power: number, angle: number, spin: number) => {
     if (phase !== 'player_throw_kubbs' || currentKubbThrowIndex >= kubbsToThrow.length) return;
 
@@ -385,10 +402,40 @@ const GameSceneContent = ({
       power,
       angle,
       spin,
-      startPos: [0, -1.4, playerBackLineZ],
+      startPos: [kubbAimX, -1.4, playerBackLineZ],
       targetSide: 'bot',
     });
-  }, [phase, currentKubbThrowIndex, kubbsToThrow.length]);
+    setIsKubbAiming(false);
+    setKubbAimX(0);
+  }, [phase, currentKubbThrowIndex, kubbsToThrow.length, kubbAimX]);
+  
+  // Kubb throw mouse controls
+  const handleKubbPointerDown = useCallback((e: any) => {
+    if (phase !== 'player_throw_kubbs' || thrownKubbData) return;
+    e.stopPropagation();
+    
+    const worldX = typeof e.point?.x === 'number' ? e.point.x : 0;
+    const clampedX = Math.max(-3, Math.min(3, worldX));
+    setKubbAimX(clampedX);
+    setIsKubbAiming(true);
+  }, [phase, thrownKubbData]);
+  
+  const handleKubbPointerMove = useCallback((e: any) => {
+    if (phase !== 'player_throw_kubbs') return;
+    
+    const worldX = typeof e.point?.x === 'number' ? e.point.x : 0;
+    const clampedX = Math.max(-3, Math.min(3, worldX));
+    
+    if (isKubbAiming) {
+      setKubbAimX(clampedX);
+    }
+  }, [phase, isKubbAiming]);
+  
+  const handleKubbPointerUp = useCallback(() => {
+    if (isKubbAiming && phase === 'player_throw_kubbs' && !thrownKubbData) {
+      handlePlayerKubbThrow(kubbOscillatingPower, kubbAimAngle, kubbAimSpin);
+    }
+  }, [isKubbAiming, phase, thrownKubbData, kubbOscillatingPower, kubbAimAngle, kubbAimSpin, handlePlayerKubbThrow]);
 
   // Handle kubb landing
   const handleKubbLanded = useCallback((finalPosition: [number, number, number]) => {
@@ -839,14 +886,40 @@ const GameSceneContent = ({
 
       {/* Kubb throwing controls with trajectory */}
       {phase === 'player_throw_kubbs' && !thrownKubbData && (
-        <KubbAimTrajectory
-          startPosition={[0, -1.4, playerBackLineZ]}
-          power={kubbAimPower}
-          angle={kubbAimAngle}
-          spin={kubbAimSpin}
-          targetSide="bot"
-          visible={true}
-        />
+        <>
+          <KubbAimTrajectory
+            startPosition={[kubbAimX, -1.4, playerBackLineZ]}
+            power={kubbAimPower}
+            angle={kubbAimAngle}
+            spin={kubbAimSpin}
+            targetSide="bot"
+            visible={isKubbAiming}
+          />
+          {/* Kubb position indicator */}
+          <mesh position={[kubbAimX, -1.95, playerBackLineZ]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.15, 0.25, 32]} />
+            <meshBasicMaterial color="#D97706" opacity={0.8} transparent />
+          </mesh>
+          {/* Power meter for kubb throw */}
+          {isKubbAiming && (
+            <Html center position={[4, 0, 0]}>
+              <div className="flex flex-col items-center gap-1 pointer-events-none">
+                <div className="text-sm font-bold text-white drop-shadow-lg">Kraft</div>
+                <div className="w-8 h-40 bg-black/50 backdrop-blur-sm rounded-full overflow-hidden border border-white/30 flex flex-col-reverse">
+                  <div 
+                    className={`w-full transition-colors duration-75 ${
+                      kubbOscillatingPower < 50 ? 'bg-green-500' :
+                      kubbOscillatingPower < 70 ? 'bg-yellow-500' :
+                      kubbOscillatingPower < 85 ? 'bg-orange-500' : 'bg-red-500'
+                    }`}
+                    style={{ height: `${kubbOscillatingPower}%` }}
+                  />
+                </div>
+                <div className="text-xs text-white drop-shadow-lg">{Math.round(kubbOscillatingPower)}%</div>
+              </div>
+            </Html>
+          )}
+        </>
       )}
       <KubbThrowControls
         kubbsRemaining={kubbsToThrow.length}
@@ -854,6 +927,9 @@ const GameSceneContent = ({
         onThrow={handlePlayerKubbThrow}
         onAimChange={handleKubbAimChange}
         visible={phase === 'player_throw_kubbs' && !thrownKubbData}
+        isAiming={isKubbAiming}
+        aimX={kubbAimX}
+        power={kubbOscillatingPower}
       />
       
       {/* Position indicator */}
@@ -912,10 +988,10 @@ const GameSceneContent = ({
       {/* Invisible plane to capture throws */}
       <mesh
         position={[0, 0, 5]}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerDown={phase === 'player_throw_kubbs' ? handleKubbPointerDown : handlePointerDown}
+        onPointerMove={phase === 'player_throw_kubbs' ? handleKubbPointerMove : handlePointerMove}
+        onPointerUp={phase === 'player_throw_kubbs' ? handleKubbPointerUp : handlePointerUp}
+        onPointerLeave={phase === 'player_throw_kubbs' ? handleKubbPointerUp : handlePointerUp}
       >
         <planeGeometry args={[25, 20]} />
         <meshBasicMaterial transparent opacity={0} />

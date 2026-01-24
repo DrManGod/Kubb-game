@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { Slider } from '@/components/ui/slider';
-import { Button } from '@/components/ui/button';
-import { Target, RotateCw } from 'lucide-react';
+import { RotateCw, ArrowUp } from 'lucide-react';
 
 interface KubbThrowControlsProps {
   kubbsRemaining: number;
@@ -10,6 +9,9 @@ interface KubbThrowControlsProps {
   onThrow: (power: number, angle: number, spin: number) => void;
   onAimChange?: (power: number, angle: number, spin: number) => void;
   visible: boolean;
+  isAiming: boolean;
+  aimX: number;
+  power: number;
 }
 
 export const KubbThrowControls = ({
@@ -18,8 +20,10 @@ export const KubbThrowControls = ({
   onThrow,
   onAimChange,
   visible,
+  isAiming,
+  aimX,
+  power,
 }: KubbThrowControlsProps) => {
-  const [power, setPower] = useState(70);
   const [angle, setAngle] = useState(45);
   const [spin, setSpin] = useState(0);
 
@@ -30,104 +34,71 @@ export const KubbThrowControls = ({
     }
   }, [power, angle, spin, visible, onAimChange]);
 
-  const handleThrow = useCallback(() => {
-    onThrow(power, angle, spin);
-  }, [power, angle, spin, onThrow]);
-
   if (!visible) return null;
 
   return (
-    <Html center position={[0, 2, 5]}>
-      <div className="w-80 bg-gradient-to-b from-amber-900/95 to-amber-950/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border-2 border-amber-500/50">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-bold text-white">Kasta Kubbar</h3>
-          </div>
-          <div className="bg-amber-600/80 px-3 py-1 rounded-full">
-            <span className="text-sm font-semibold text-white">
+    <Html center position={[0, 3.5, 0]}>
+      <div className="flex flex-col items-center gap-3">
+        {/* Compact header */}
+        <div className="bg-amber-900/90 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-500/50 shadow-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-amber-400 font-bold">
+              🎯 Kasta Kubb
+            </span>
+            <span className="bg-amber-600/80 px-2 py-0.5 rounded-full text-sm text-white font-semibold">
               {kubbsRemaining - currentKubbIndex} kvar
             </span>
           </div>
         </div>
 
         {/* Instructions */}
-        <p className="text-amber-200/80 text-sm mb-4">
-          Kasta till motståndarens fält. Högre kraft = längre kast.
-        </p>
-
-        {/* Power Meter */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium text-white">Kraft</label>
-            <span className="text-sm font-bold text-amber-400">{power}%</span>
-          </div>
-          <Slider
-            value={[power]}
-            onValueChange={(vals) => setPower(vals[0])}
-            min={30}
-            max={100}
-            step={1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-amber-200/60 mt-1">
-            <span>Svag</span>
-            <span>Stark</span>
-          </div>
+        <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg text-center">
+          <p className="text-white text-sm">
+            {isAiming 
+              ? `🎯 Kraft: ${Math.round(power)}% | Släpp för att kasta!` 
+              : '🖱️ Klicka och håll för att sikta, släpp för att kasta!'
+            }
+          </p>
         </div>
 
-        {/* Angle Meter */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium text-white">Vinkel</label>
-            <span className="text-sm font-bold text-amber-400">{angle}°</span>
+        {/* Compact sliders for angle and spin */}
+        <div className="flex gap-4 bg-amber-950/90 backdrop-blur-md px-4 py-3 rounded-xl border border-amber-500/30">
+          {/* Angle slider */}
+          <div className="flex flex-col items-center gap-1 w-24">
+            <div className="flex items-center gap-1 text-amber-400">
+              <ArrowUp className="w-3 h-3" />
+              <span className="text-xs font-medium">Vinkel</span>
+            </div>
+            <Slider
+              value={[angle]}
+              onValueChange={(vals) => setAngle(vals[0])}
+              min={30}
+              max={60}
+              step={1}
+              className="w-full"
+            />
+            <span className="text-xs text-amber-200">{angle}°</span>
           </div>
-          <Slider
-            value={[angle]}
-            onValueChange={(vals) => setAngle(vals[0])}
-            min={30}
-            max={60}
-            step={1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-amber-200/60 mt-1">
-            <span>Låg båge</span>
-            <span>Hög båge</span>
-          </div>
-        </div>
 
-        {/* Spin Meter */}
-        <div className="mb-5">
-          <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium text-white flex items-center gap-1">
-              <RotateCw className="w-3 h-3" /> Spin
-            </label>
-            <span className="text-sm font-bold text-amber-400">
+          {/* Spin slider */}
+          <div className="flex flex-col items-center gap-1 w-24">
+            <div className="flex items-center gap-1 text-amber-400">
+              <RotateCw className="w-3 h-3" />
+              <span className="text-xs font-medium">Spin</span>
+            </div>
+            <Slider
+              value={[spin]}
+              onValueChange={(vals) => setSpin(vals[0])}
+              min={-100}
+              max={100}
+              step={5}
+              className="w-full"
+            />
+            <span className="text-xs text-amber-200">
               {spin > 0 ? `+${spin}` : spin}
             </span>
           </div>
-          <Slider
-            value={[spin]}
-            onValueChange={(vals) => setSpin(vals[0])}
-            min={-100}
-            max={100}
-            step={5}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-amber-200/60 mt-1">
-            <span>⟲ Vänster</span>
-            <span>Höger ⟳</span>
-          </div>
         </div>
-
-        {/* Throw Button */}
-        <Button
-          onClick={handleThrow}
-          className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold py-3 text-lg shadow-lg transition-transform hover:scale-105"
-        >
-          🎯 Kasta Kubb
-        </Button>
       </div>
     </Html>
   );
