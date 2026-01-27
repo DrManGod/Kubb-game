@@ -32,6 +32,7 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
   // Field kubbs on player's side can only be hit by bot batons
   // Field kubbs on bot's side can only be hit by player batons
   const collisionGroup = side === 'player' ? COLLISION_GROUPS.PLAYER_KUBBS : COLLISION_GROUPS.BOT_KUBBS;
+  // Also collide with same-side kubbs so chain reactions work (already included in mask)
   const collisionMask = side === 'player' ? COLLISION_MASKS.PLAYER_KUBBS : COLLISION_MASKS.BOT_KUBBS;
   
   const handleCollision = useCallback((e: any, apiRef: any) => {
@@ -45,7 +46,11 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
         hasBeenHitRef.current = true;
         setHasBeenHit(true);
         onHitRef.current(id);
+        
+        // Switch to dynamic physics so kubb can fall
+        apiRef.mass.set(0.2);
         apiRef.wakeUp();
+        
         const impulseX = (Math.random() - 0.5) * 0.6;
         const impulseZ = side === 'player' ? 1.2 : -1.2; // Fall toward the back
         apiRef.applyImpulse([impulseX, 0.2, impulseZ], [0, 0.3, 0]);
@@ -58,8 +63,10 @@ export const FieldKubb = ({ id, position, onHit, isHit, side }: FieldKubbProps) 
     }
   }, [id, side]);
   
+  // Start as kinematic (mass 0) so kubbs don't move until hit
+  // Once hit, we set mass to 0.2 to make them dynamic
   const [cubeRef, api] = useBox<Mesh>(() => ({
-    mass: 0.2,
+    mass: 0, // Start with mass 0 (kinematic/static behavior)
     position,
     args: [0.3, 0.6, 0.3],
     type: 'Dynamic',
