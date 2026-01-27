@@ -297,9 +297,11 @@ const GameSceneContent = ({
     return () => clearTimeout(timer);
   }, [phase, kubbsToThrow, knockedBotKubbsThisTurn, onPhaseChange]);
 
-  // Handle bot kubb landing - collect for player to raise
+  // Handle bot kubb landing - collect for player to raise (uses same kubb ID)
   const handleBotKubbLanded = useCallback((finalPosition: [number, number, number]) => {
-    const kubbId = `field-player-${Date.now()}-${currentKubbThrowIndex}`;
+    // Get the kubb being thrown - preserve its ID
+    const thrownKubbInfo = kubbsToThrow[currentKubbThrowIndex];
+    const kubbId = thrownKubbInfo?.id || `field-player-${Date.now()}-${currentKubbThrowIndex}`;
     
     // Add to landed kubbs for raising
     setLandedKubbs(prev => [...prev, {
@@ -336,33 +338,34 @@ const GameSceneContent = ({
         targetSide: 'player',
       });
     }, 1500);
-  }, [currentKubbThrowIndex, kubbsToThrow.length, onPhaseChange]);
+  }, [currentKubbThrowIndex, kubbsToThrow, onPhaseChange]);
 
   // Handle player raising a kubb (choosing top or bottom edge)
   const handleRaiseKubb = useCallback((kubbId: string, edge: 'top' | 'bottom') => {
+    // Find the kubb that was raised
+    const kubb = landedKubbs.find(k => k.id === kubbId);
+    if (!kubb) return;
+    
+    // Mark as raised
     setLandedKubbs(prev => prev.map(k => 
       k.id === kubbId ? { ...k, raised: true } : k
     ));
     
-    // Find the kubb and add it as a field kubb
-    setLandedKubbs(prev => {
-      const kubb = prev.find(k => k.id === kubbId);
-      if (kubb) {
-        const newFieldKubb: FieldKubbType = {
-          id: kubb.id,
-          position: kubb.position,
-          isDown: false,
-          side: 'player',
-        };
-        setFieldKubbs(current => {
-          const updated = [...current.filter(k => !k.isDown), newFieldKubb];
-          onFieldKubbsChange(updated);
-          return updated;
-        });
-      }
-      return prev.map(k => k.id === kubbId ? { ...k, raised: true } : k);
+    // Add/update as a field kubb - replace any existing with same ID
+    const newFieldKubb: FieldKubbType = {
+      id: kubb.id,
+      position: kubb.position,
+      isDown: false,
+      side: 'player',
+    };
+    
+    setFieldKubbs(current => {
+      const filtered = current.filter(k => k.id !== kubb.id && !k.isDown);
+      const updated = [...filtered, newFieldKubb];
+      onFieldKubbsChange(updated);
+      return updated;
     });
-  }, [onFieldKubbsChange]);
+  }, [landedKubbs, onFieldKubbsChange]);
 
   // Handle completing the raise phase
   const handleRaiseComplete = useCallback(() => {
@@ -437,21 +440,27 @@ const GameSceneContent = ({
     }
   }, [isKubbAiming, phase, thrownKubbData, kubbOscillatingPower, kubbAimAngle, kubbAimSpin, handlePlayerKubbThrow]);
 
-  // Handle kubb landing
+  // Handle kubb landing - update position of existing kubb (not create new)
   const handleKubbLanded = useCallback((finalPosition: [number, number, number]) => {
     setThrownKubbData(null);
 
     if (phase !== 'player_throw_kubbs') return;
 
+    // Get the kubb being thrown - it moves to new position, not duplicated
+    const thrownKubbInfo = kubbsToThrow[currentKubbThrowIndex];
+    if (!thrownKubbInfo) return;
+
     const newKubb: FieldKubbType = {
-      id: `field-bot-${Date.now()}-${currentKubbThrowIndex}`,
+      id: thrownKubbInfo.id, // Keep same ID so we track the same kubb
       position: finalPosition,
       isDown: false,
       side: 'bot',
     };
 
+    // Replace any existing kubb with same ID, or add if new
     setFieldKubbs(prev => {
-      const updated = [...prev.filter(k => !k.isDown), newKubb];
+      const filtered = prev.filter(k => k.id !== thrownKubbInfo.id && !k.isDown);
+      const updated = [...filtered, newKubb];
       onFieldKubbsChange(updated);
       return updated;
     });
@@ -479,7 +488,7 @@ const GameSceneContent = ({
     } else {
       setCurrentKubbThrowIndex(nextIndex);
     }
-  }, [phase, currentKubbThrowIndex, kubbsToThrow.length, currentRound, onFieldKubbsChange, onPhaseChange, onPlayerBatonsChange, onBotBatonsChange, onRoundChange]);
+  }, [phase, currentKubbThrowIndex, kubbsToThrow, currentRound, onFieldKubbsChange, onPhaseChange, onPlayerBatonsChange, onBotBatonsChange, onRoundChange]);
 
   // End player turn when out of batons
   useEffect(() => {
