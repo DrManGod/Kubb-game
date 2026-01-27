@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GameScene } from '@/components/game/GameScene';
 import { GameUI } from '@/components/game/GameUI';
-import { DebugSettings } from '@/components/game/DebugSettings';
 import { GamePhase, FieldKubb } from '@/hooks/useGameState';
 import { useWind } from '@/hooks/useWind';
 
@@ -19,7 +18,7 @@ const Index = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [kingStanding, setKingStanding] = useState(true);
   const [advantageLine, setAdvantageLine] = useState<number | null>(null);
-  const [batonReadyY, setBatonReadyY] = useState(-0.3);
+  const batonReadyY = -0.3;
   const { wind, randomizeWind, shiftWind } = useWind();
 
   // Shift wind slightly when total throws changes
@@ -56,12 +55,6 @@ const Index = () => {
           🏏 Kubb Toss
         </h1>
       </div>
-      
-      {/* Debug Settings */}
-      <DebugSettings 
-        batonReadyY={batonReadyY}
-        onBatonReadyYChange={setBatonReadyY}
-      />
       
       {/* 3D Game Canvas */}
       <GameScene 
