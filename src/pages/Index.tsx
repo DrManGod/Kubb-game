@@ -21,20 +21,36 @@ const Index = () => {
   const [batonReadyY, setBatonReadyY] = useState(-0.3);
   const { wind, randomizeWind, shiftWind } = useWind();
 
-  // Mouse wheel to adjust baton height (±0.5 from base -0.3)
+  // Mouse wheel and arrow keys to adjust baton height in real-time (±0.5 from base -0.3)
   useEffect(() => {
+    const adjustHeight = (delta: number) => {
+      if (phase !== 'player_turn') return;
+      setBatonReadyY(prev => Math.max(-0.8, Math.min(0.2, prev + delta)));
+    };
+
     const handleWheel = (e: WheelEvent) => {
       if (phase !== 'player_turn') return;
       e.preventDefault();
-      setBatonReadyY(prev => {
-        const delta = e.deltaY > 0 ? -0.05 : 0.05;
-        const newVal = prev + delta;
-        return Math.max(-0.8, Math.min(0.2, newVal));
-      });
+      adjustHeight(e.deltaY > 0 ? -0.05 : 0.05);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (phase !== 'player_turn') return;
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        adjustHeight(0.05);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        adjustHeight(-0.05);
+      }
     };
     
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [phase]);
 
   // Shift wind slightly when total throws changes
