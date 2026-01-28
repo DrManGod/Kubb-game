@@ -812,12 +812,11 @@ const GameSceneContent = ({
         
         <Baton ref={batonRef} position={batonStartPos} />
         
-        {/* Bot baseline kubbs (player throws at these) - hide only during/after throw-back */}
+        {/* Bot baseline kubbs (player throws at these) - hide permanently once knocked */}
         {BOT_BASELINE_POSITIONS.map((pos, i) => {
-          // Show kubb if: not hit, OR hit but not yet in throw-back phase
+          // Once knocked down, kubb becomes a field kubb and never returns to baseline
           const isDown = botBaselineKubbsDown.has(i);
-          const hideForThrowBack = isDown && (phase === 'bot_throw_kubbs' || phase === 'player_raise_kubbs' || phase === 'bot_turn');
-          if (hideForThrowBack) return null;
+          if (isDown) return null;
           
           return (
             <TargetCube
@@ -826,7 +825,7 @@ const GameSceneContent = ({
               position={pos}
               color={CUBE_COLORS[i]}
               onHit={handleBotBaselineHit}
-              isHit={isDown}
+              isHit={false}
               disabled={mustClearFieldKubbsFirst}
             />
           );

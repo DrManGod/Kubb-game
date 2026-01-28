@@ -25,7 +25,7 @@ const Index = () => {
   useEffect(() => {
     const adjustHeight = (delta: number) => {
       if (phase !== 'player_turn') return;
-      setBatonReadyY(prev => Math.max(-0.8, Math.min(0.2, prev + delta)));
+      setBatonReadyY(prev => Math.max(-1.1, Math.min(0.2, prev + delta)));
     };
 
     const handleWheel = (e: WheelEvent) => {
