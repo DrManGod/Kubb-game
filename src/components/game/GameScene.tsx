@@ -831,11 +831,11 @@ const GameSceneContent = ({
           );
         })}
         
-        {/* Player baseline kubbs (bot throws at these) - hide only during/after throw-back */}
+        {/* Player baseline kubbs (bot throws at these) - hide permanently once knocked */}
         {PLAYER_BASELINE_POSITIONS.map((pos, i) => {
+          // Once knocked down, kubb becomes a field kubb and never returns to baseline
           const isDown = playerBaselineKubbsDown.has(i);
-          const hideForThrowBack = isDown && (phase === 'player_throw_kubbs' || phase === 'player_turn');
-          if (hideForThrowBack) return null;
+          if (isDown) return null;
           
           return (
             <PlayerBaselineKubb
@@ -843,7 +843,7 @@ const GameSceneContent = ({
               id={i}
               position={pos}
               onHit={handlePlayerBaselineHit}
-              isHit={isDown}
+              isHit={false}
             />
           );
         })}
